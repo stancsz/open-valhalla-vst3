@@ -2,3 +2,4 @@ build/
 JuceLibraryCode/
 *.jucer
 *.user
+release/
