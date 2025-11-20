@@ -137,5 +137,8 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> modeAtt;
     juce::Label modeLabel;
 
+    // Clear Button
+    juce::TextButton clearButton { "CLEAR" };
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VST3OpenValhallaAudioProcessorEditor)
 };

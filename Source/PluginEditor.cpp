@@ -33,6 +33,12 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
     modeLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF888888));
     addAndMakeVisible(modeLabel);
 
+    // Clear Button
+    addAndMakeVisible(clearButton);
+    clearButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF2A2A2A));
+    clearButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    clearButton.onClick = [this]() { audioProcessor.clearTriggered = true; };
+
     setSize (850, 450);
 }
 
@@ -102,6 +108,9 @@ void VST3OpenValhallaAudioProcessorEditor::resized()
     // Center the combobox logic:
     modeComboBox.setBounds(bottomBar.getCentreX() - 100, bottomBar.getY() + 10, 200, 30);
     modeLabel.setBounds(modeComboBox.getX() - 50, modeComboBox.getY(), 45, 30);
+
+    // Clear Button
+    clearButton.setBounds(modeComboBox.getRight() + 20, modeComboBox.getY(), 60, 30);
 
     // Main panels layout
     // 5 Columns: Mix | Delay | Feedback | Mod | EQ

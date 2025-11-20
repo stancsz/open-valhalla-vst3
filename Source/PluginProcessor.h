@@ -53,6 +53,12 @@ private:
 
     ReverbProcessor reverbProcessor;
 
+public:
+    // Trigger Clear
+    std::atomic<bool> clearTriggered { false };
+
+private:
+
     // Mode Enum
     enum Mode
     {

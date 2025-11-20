@@ -237,6 +237,12 @@ void VST3OpenValhallaAudioProcessor::processBlock (juce::AudioBuffer<float>& buf
     juce::dsp::AudioBlock<float> block(buffer);
     juce::dsp::ProcessContextReplacing<float> context(block);
 
+    // Check for Clear Trigger
+    if (clearTriggered.exchange(false))
+    {
+        reverbProcessor.reset();
+    }
+
     reverbProcessor.process(context);
 }
 
