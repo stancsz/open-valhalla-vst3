@@ -365,6 +365,302 @@ void FDNRAudioProcessor::resetAllParametersToDefault()
 
 void FDNRAudioProcessor::setParametersForMode(int modeIndex)
 {
+    auto setParam = [&](const juce::String& id, float val) {
+        auto param = apvts.getParameterAsValue(id);
+        if ((float)param.getValue() != val)
+            param.setValue(val);
+    };
+
+    // Helper to reset common modifiers to a "clean" state before applying specific character
+    auto resetModifiers = [&]() {
+        setParam("WARP", 0.0f);
+        setParam("SATURATION", 0.0f);
+        setParam("DUCKING", 0.0f);
+        setParam("GATE_THRESH", -100.0f);
+        setParam("DYNFREQ", 1000.0f);
+        setParam("DYNGAIN", 0.0f);
+    };
+
+    resetModifiers();
+
+    switch (modeIndex)
+    {
+        case TwinStar: // Gemini - Balanced, dual nature, standard hall
+            setParam("MIX", 40.0f);
+            setParam("DELAY", 350.0f);
+            setParam("FEEDBACK", 55.0f);
+            setParam("WIDTH", 100.0f);
+            setParam("DENSITY", 60.0f);
+            setParam("DIFFUSION", 80.0f);
+            setParam("MODRATE", 0.6f);
+            setParam("MODDEPTH", 25.0f);
+            setParam("EQ3_LOW", 0.0f);
+            setParam("EQ3_MID", 0.0f);
+            setParam("EQ3_HIGH", 0.0f);
+            break;
+
+        case SeaSerpent: // Hydra - Deep, submerged, modulated tail
+            setParam("MIX", 55.0f);
+            setParam("DELAY", 850.0f);
+            setParam("FEEDBACK", 88.0f);
+            setParam("WIDTH", 90.0f);
+            setParam("DENSITY", 85.0f);
+            setParam("DIFFUSION", 50.0f);
+            setParam("MODRATE", 0.25f);
+            setParam("MODDEPTH", 75.0f);
+            setParam("EQ3_LOW", 4.0f);
+            setParam("EQ3_HIGH", -6.0f);
+            setParam("WARP", 20.0f);
+            break;
+
+        case HorseMan: // Centaurus - Strong, stable, room-like, woody
+            setParam("MIX", 35.0f);
+            setParam("DELAY", 180.0f);
+            setParam("FEEDBACK", 40.0f);
+            setParam("WIDTH", 75.0f);
+            setParam("DENSITY", 95.0f);
+            setParam("DIFFUSION", 100.0f);
+            setParam("MODRATE", 1.2f);
+            setParam("MODDEPTH", 10.0f);
+            setParam("EQ3_LOW", -1.0f);
+            setParam("EQ3_MID", 2.0f);
+            setParam("EQ3_HIGH", -2.0f);
+            break;
+
+        case Archer: // Sagittarius - Sharp, distant, bright attacks
+            setParam("MIX", 45.0f);
+            setParam("DELAY", 550.0f);
+            setParam("FEEDBACK", 65.0f);
+            setParam("WIDTH", 100.0f);
+            setParam("DENSITY", 30.0f); // Lower density for distinct reflections
+            setParam("DIFFUSION", 40.0f);
+            setParam("MODRATE", 0.8f);
+            setParam("MODDEPTH", 35.0f);
+            setParam("EQ3_HIGH", 4.0f);
+            setParam("SATURATION", 10.0f);
+            break;
+
+        case VoidMaker: // Great Annihilator - Massive, infinite, dark drone
+            setParam("MIX", 100.0f); // Drone territory
+            setParam("DELAY", 1000.0f);
+            setParam("FEEDBACK", 98.0f); // Near freeze
+            setParam("WIDTH", 100.0f);
+            setParam("DENSITY", 100.0f);
+            setParam("DIFFUSION", 100.0f);
+            setParam("MODRATE", 0.15f);
+            setParam("MODDEPTH", 60.0f);
+            setParam("EQ3_LOW", 8.0f);
+            setParam("EQ3_HIGH", -12.0f);
+            setParam("SATURATION", 45.0f);
+            break;
+
+        case GalaxySpiral: // Andromeda - Swirling, vast, spacey
+            setParam("MIX", 50.0f);
+            setParam("DELAY", 600.0f);
+            setParam("FEEDBACK", 80.0f);
+            setParam("WIDTH", 100.0f);
+            setParam("DENSITY", 50.0f);
+            setParam("DIFFUSION", 70.0f);
+            setParam("MODRATE", 2.8f); // Fast swirl
+            setParam("MODDEPTH", 65.0f);
+            setParam("WARP", 30.0f);
+            break;
+
+        case HarpString: // Lyra - Resonant, metallic, comb-filtery
+            setParam("MIX", 40.0f);
+            setParam("DELAY", 60.0f); // Very short for resonance
+            setParam("FEEDBACK", 90.0f);
+            setParam("WIDTH", 60.0f);
+            setParam("DENSITY", 0.0f); // No smoothing
+            setParam("DIFFUSION", 0.0f); // Pure delays
+            setParam("MODRATE", 0.4f);
+            setParam("MODDEPTH", 15.0f);
+            setParam("EQ3_HIGH", 6.0f);
+            break;
+
+        case GoatHorn: // Capricorn - Earthy, dry, distorted plate
+            setParam("MIX", 30.0f);
+            setParam("DELAY", 220.0f);
+            setParam("FEEDBACK", 45.0f);
+            setParam("WIDTH", 80.0f);
+            setParam("DENSITY", 80.0f);
+            setParam("DIFFUSION", 90.0f);
+            setParam("MODRATE", 0.9f);
+            setParam("MODDEPTH", 20.0f);
+            setParam("SATURATION", 35.0f);
+            setParam("EQ3_LOW", 2.0f);
+            setParam("EQ3_MID", 3.0f);
+            setParam("EQ3_HIGH", -4.0f);
+            break;
+
+        case NebulaCloud: // Large Magellanic Cloud - Diffuse, soft, ambient
+            setParam("MIX", 65.0f);
+            setParam("DELAY", 900.0f);
+            setParam("FEEDBACK", 82.0f);
+            setParam("WIDTH", 100.0f);
+            setParam("DENSITY", 100.0f);
+            setParam("DIFFUSION", 100.0f); // Max diffusion
+            setParam("MODRATE", 0.3f);
+            setParam("MODDEPTH", 40.0f);
+            setParam("EQ3_HIGH", -3.0f);
+            break;
+
+        case Triangle: // Triangulum - Simple, geometric, sparse echoes
+            setParam("MIX", 40.0f);
+            setParam("DELAY", 450.0f);
+            setParam("FEEDBACK", 50.0f);
+            setParam("WIDTH", 100.0f);
+            setParam("DENSITY", 10.0f);
+            setParam("DIFFUSION", 20.0f);
+            setParam("MODRATE", 0.0f);
+            setParam("MODDEPTH", 0.0f);
+            break;
+
+        case CloudMajor: // Cirrus Major - Bright, airy, uplifting
+            setParam("MIX", 50.0f);
+            setParam("DELAY", 700.0f);
+            setParam("FEEDBACK", 75.0f);
+            setParam("WIDTH", 100.0f);
+            setParam("DENSITY", 90.0f);
+            setParam("DIFFUSION", 95.0f);
+            setParam("MODRATE", 0.7f);
+            setParam("MODDEPTH", 30.0f);
+            setParam("EQ3_LOW", -5.0f);
+            setParam("EQ3_HIGH", 6.0f);
+            break;
+
+        case CloudMinor: // Cirrus Minor - Dark, moody, mysterious
+            setParam("MIX", 55.0f);
+            setParam("DELAY", 750.0f);
+            setParam("FEEDBACK", 78.0f);
+            setParam("WIDTH", 90.0f);
+            setParam("DENSITY", 90.0f);
+            setParam("DIFFUSION", 95.0f);
+            setParam("MODRATE", 0.5f);
+            setParam("MODDEPTH", 45.0f);
+            setParam("EQ3_LOW", 3.0f);
+            setParam("EQ3_HIGH", -8.0f);
+            break;
+
+        case QueenChair: // Cassiopeia - Regal, wide, rich, complex
+            setParam("MIX", 60.0f);
+            setParam("DELAY", 650.0f);
+            setParam("FEEDBACK", 72.0f);
+            setParam("WIDTH", 100.0f);
+            setParam("DENSITY", 85.0f);
+            setParam("DIFFUSION", 85.0f);
+            setParam("MODRATE", 1.5f);
+            setParam("MODDEPTH", 55.0f); // Rich chorus
+            setParam("EQ3_MID", 2.0f);
+            break;
+
+        case HunterBelt: // Orion - Focused, punchy, tight
+            setParam("MIX", 35.0f);
+            setParam("DELAY", 150.0f);
+            setParam("FEEDBACK", 25.0f);
+            setParam("WIDTH", 60.0f);
+            setParam("DENSITY", 100.0f);
+            setParam("DIFFUSION", 100.0f);
+            setParam("MODRATE", 0.0f);
+            setParam("MODDEPTH", 0.0f);
+            setParam("GATE_THRESH", -30.0f); // Gated effect
+            break;
+
+        case WaterBearer: // Aquarius - Liquid, fluid, flowing
+            setParam("MIX", 70.0f);
+            setParam("DELAY", 500.0f);
+            setParam("FEEDBACK", 65.0f);
+            setParam("WIDTH", 100.0f);
+            setParam("DENSITY", 70.0f);
+            setParam("DIFFUSION", 60.0f);
+            setParam("MODRATE", 3.0f); // Fast liquid modulation
+            setParam("MODDEPTH", 85.0f);
+            setParam("WARP", 15.0f);
+            break;
+
+        case TwoFish: // Pisces - Deep, dual delay lines feel
+            setParam("MIX", 50.0f);
+            setParam("DELAY", 600.0f);
+            setParam("FEEDBACK", 60.0f);
+            setParam("WIDTH", 100.0f);
+            setParam("DENSITY", 40.0f);
+            setParam("DIFFUSION", 50.0f);
+            setParam("MODRATE", 0.4f);
+            setParam("MODDEPTH", 60.0f);
+            setParam("EQ3_LOW", 5.0f);
+            setParam("EQ3_HIGH", -10.0f); // Underwater
+            break;
+
+        case ScorpionTail: // Scorpio - Aggressive, stinging, intense
+            setParam("MIX", 45.0f);
+            setParam("DELAY", 300.0f);
+            setParam("FEEDBACK", 55.0f);
+            setParam("WIDTH", 80.0f);
+            setParam("DENSITY", 80.0f);
+            setParam("DIFFUSION", 80.0f);
+            setParam("MODRATE", 4.0f); // Intense flutter
+            setParam("MODDEPTH", 30.0f);
+            setParam("SATURATION", 80.0f); // Heavy saturation
+            setParam("EQ3_HIGH", 5.0f);
+            break;
+
+        case BalanceScale: // Libra - Perfectly neutral, reference room
+            setParam("MIX", 50.0f);
+            setParam("DELAY", 400.0f);
+            setParam("FEEDBACK", 50.0f);
+            setParam("WIDTH", 100.0f);
+            setParam("DENSITY", 50.0f);
+            setParam("DIFFUSION", 50.0f);
+            setParam("MODRATE", 0.5f);
+            setParam("MODDEPTH", 20.0f);
+            setParam("EQ3_LOW", 0.0f);
+            setParam("EQ3_MID", 0.0f);
+            setParam("EQ3_HIGH", 0.0f);
+            break;
+
+        case LionHeart: // Leo - Warm, bold, mid-forward
+            setParam("MIX", 55.0f);
+            setParam("DELAY", 500.0f);
+            setParam("FEEDBACK", 65.0f);
+            setParam("WIDTH", 90.0f);
+            setParam("DENSITY", 75.0f);
+            setParam("DIFFUSION", 85.0f);
+            setParam("MODRATE", 0.8f);
+            setParam("MODDEPTH", 25.0f);
+            setParam("SATURATION", 25.0f);
+            setParam("EQ3_MID", 4.0f); // Mid boost
+            setParam("EQ3_HIGH", -2.0f);
+            break;
+
+        case Maiden: // Virgo - Clean, pure, pristine
+            setParam("MIX", 40.0f);
+            setParam("DELAY", 350.0f);
+            setParam("FEEDBACK", 45.0f);
+            setParam("WIDTH", 100.0f);
+            setParam("DENSITY", 80.0f);
+            setParam("DIFFUSION", 90.0f);
+            setParam("MODRATE", 0.3f);
+            setParam("MODDEPTH", 10.0f); // Very subtle
+            setParam("SATURATION", 0.0f); // No saturation
+            setParam("EQ3_LOW", -2.0f); // Clean up mud
+            break;
+
+        case SevenSisters: // Pleiades - Shimmering, multi-tap texture
+            setParam("MIX", 60.0f);
+            setParam("DELAY", 777.0f);
+            setParam("FEEDBACK", 77.0f);
+            setParam("WIDTH", 100.0f);
+            setParam("DENSITY", 30.0f); // Grainy
+            setParam("DIFFUSION", 60.0f);
+            setParam("MODRATE", 2.0f);
+            setParam("MODDEPTH", 50.0f);
+            setParam("EQ3_HIGH", 8.0f); // Shimmer brightness
+            break;
+
+        default:
+            setParam("MIX", 50.0f);
+            break;
+    }
 }
 
 void FDNRAudioProcessor::toggleAB()
