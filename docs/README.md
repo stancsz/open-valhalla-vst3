@@ -1,10 +1,10 @@
-# Open Valhalla
+# Open Valhalla (VST3)
 
-**Open Valhalla** is an open-source, modular reverb engine offering high-fidelity algorithms inspired by classic space reverberators. It features deep modulation, multiple reverb modes, and VST3 compatibility.
+[![Download v0.1.0](https://img.shields.io/badge/Download-v0.1.0-brightgreen?style=for-the-badge)](https://github.com/stancsz/open-valhalla-vst3/releases/tag/v0.1.0)
 
 ![Open Valhalla Screenshot](screenshot.png)
 
-
+**Open Valhalla** is an open-source, modular reverb engine offering high-fidelity algorithms inspired by classic space reverberators. It features deep modulation, multiple reverb modes, and VST3 compatibility.
 
 ## Features
 
@@ -46,18 +46,24 @@
 ## Installation
 
 ### For Users
-Download the latest Release for your operating system (Windows, Mac, or Linux) from the [Releases](../../releases) page. The release will be a `.zip` file (e.g., `Open_Valhalla_VST3_Linux.zip`).
+Download the latest Release for your operating system (Windows, Mac, or Linux) from the [Releases](../../releases) page, or use the download badge above which links to the current Windows release.
 
-1.  **Unzip** the downloaded file.
+1.  **Unzip** the downloaded `.zip` file (e.g., `Open_Valhalla_VST3_Windows.zip`).
 2.  **VST3 Plugin**:
     *   Find the `Open Valhalla.vst3` file (or folder).
     *   Copy it to your system's VST3 directory:
         *   **Windows**: `C:\Program Files\Common Files\VST3\`
         *   **Mac**: `/Library/Audio/Plug-Ins/VST3/`
-        *   **Linux**: `~/.vst3/` or `/usr/lib/vst3/`
+        *   **Linux**: `~/.vst3/` or `/usr/lib/vst3/` (or your DAW's VST3 folder)
 3.  **Standalone Application** (Optional):
     *   Find the `Open Valhalla` executable (or app bundle).
     *   You can run this directly or copy it to your Applications folder.
+
+If the plugin doesn't appear in your host
+- Confirm the `.vst3` file is in a folder the DAW scans.
+- Rescan or restart the host application.
+- Check file permissions (macOS/Linux) and architecture (x64 vs arm64) compatibility.
+- See `release/` for prebuilt zips.
 
 ### For Developers
 See the [Build Instructions](#build-instructions) below.
@@ -101,7 +107,13 @@ The Standalone application will be in:
     *   `PluginProcessor.cpp/h`: Handles audio processing and state management.
     *   `PluginEditor.cpp/h`: Handles the GUI implementation.
     *   `ReverbProcessor.cpp/h`: Encapsulates the core DSP logic.
-*   **release/**: Contains the zipped release artifacts.
+*   **release/**: Contains the zipped release artifacts (for example: `Open_Valhalla_VST3_Windows.zip`).
+*   **docs/screenshot.png**: UI screenshot used in documentation.
+
+## Contributing
+
+- Fork, make changes, and open a PR.
+- When changing UI assets, update the plugin screenshot (see `AGENTS.md` rules in the repo root).
 
 ## License
 
