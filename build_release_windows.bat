@@ -38,8 +38,8 @@ if exist "build\VST3OpenValhalla_artefacts\Release\Standalone" (
 )
 
 echo Zipping...
-if exist "release\OpenValhalla-Windows.zip" del "release\OpenValhalla-Windows.zip"
-powershell -command "Compress-Archive -Path 'build\package\*' -DestinationPath 'release\OpenValhalla-Windows.zip' -Force"
+if exist "release\Open_Valhalla_VST3_Windows.zip" del "release\Open_Valhalla_VST3_Windows.zip"
+powershell -command "Compress-Archive -Path 'build\package\*' -DestinationPath 'release\Open_Valhalla_VST3_Windows.zip' -Force"
 
-echo Build complete: release\OpenValhalla-Windows.zip
+echo Build complete: release\Open_Valhalla_VST3_Windows.zip
 endlocal
