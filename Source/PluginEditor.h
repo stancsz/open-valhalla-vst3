@@ -18,6 +18,7 @@ public:
         setColour(juce::Label::textColourId, juce::Colour(0xFFCCCCCC)); // Light grey text
         setColour(juce::Slider::textBoxTextColourId, juce::Colour(0xFFFFFFFF));
         setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
+        setColour(juce::Slider::textBoxBackgroundColourId, juce::Colours::transparentBlack);
     }
 
     void drawRotarySlider (juce::Graphics& g, int x, int y, int width, int height, float sliderPos,
@@ -131,6 +132,9 @@ private:
 
     // Labels
     std::vector<std::unique_ptr<juce::Label>> labels;
+
+    // Layout
+    std::vector<juce::Rectangle<int>> columnRects;
 
     // Mode Selector
     juce::ComboBox modeComboBox;

@@ -35,7 +35,7 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
 
     // Clear Button
     addAndMakeVisible(clearButton);
-    clearButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF2A2A2A));
+    clearButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF444444));
     clearButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     clearButton.onClick = [this]()
     {
@@ -63,7 +63,7 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
 
     // Preset Buttons
     addAndMakeVisible(savePresetButton);
-    savePresetButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF2A2A2A));
+    savePresetButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF444444));
     savePresetButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     savePresetButton.onClick = [this]()
     {
@@ -88,7 +88,7 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
     };
 
     addAndMakeVisible(loadPresetButton);
-    loadPresetButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF2A2A2A));
+    loadPresetButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF444444));
     loadPresetButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     loadPresetButton.onClick = [this]()
     {
@@ -125,7 +125,7 @@ VST3OpenValhallaAudioProcessorEditor::~VST3OpenValhallaAudioProcessorEditor()
 void VST3OpenValhallaAudioProcessorEditor::addSlider(juce::Slider& slider, std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>& attachment, const juce::String& paramID, const juce::String& name)
 {
     slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    slider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0); // Clean look, no text box
+    slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 70, 20);
     slider.setPopupDisplayEnabled(true, false, this); // Show value on drag
     addAndMakeVisible(slider);
 
@@ -155,26 +155,24 @@ void VST3OpenValhallaAudioProcessorEditor::paint (juce::Graphics& g)
     g.drawFittedText ("OPEN VALHALLA", getLocalBounds().removeFromTop(50), juce::Justification::centred, 1);
 
     // Draw Group Panels
-    auto drawPanel = [&](juce::Rectangle<int> bounds, juce::String title)
+    for (const auto& rect : columnRects)
     {
         g.setColour(juce::Colour(0xFF252535).withAlpha(0.6f));
-        g.fillRoundedRectangle(bounds.toFloat(), 10.0f);
+        g.fillRoundedRectangle(rect.toFloat(), 10.0f);
         g.setColour(juce::Colour(0xFF353545));
-        g.drawRoundedRectangle(bounds.toFloat(), 10.0f, 1.0f);
-
-        // Subtle Label at bottom of panel? Or maybe not needed if knobs are labeled.
-    };
-
-    // We need the layout coordinates here, which is tricky without recalculating.
-    // A better way is to use a component for groups, but for now we approximate or store rects.
-    // Or we can just draw 'separation' lines.
+        g.drawRoundedRectangle(rect.toFloat(), 10.0f, 1.0f);
+    }
 }
 
 void VST3OpenValhallaAudioProcessorEditor::resized()
 {
     auto area = getLocalBounds().reduced(20);
-    auto topBar = area.removeFromTop(40); // Title area
+    auto topBar = area.removeFromTop(60); // Title area
     auto bottomBar = area.removeFromBottom(50); // Mode selector
+
+    // Website Link (Centered under title)
+    websiteLink.setBounds(0, 45, getWidth(), 20);
+    websiteLink.setJustificationType(juce::Justification::centred);
 
     // Mode Selector centered
     auto modeArea = bottomBar.reduced(0, 5);
@@ -191,25 +189,24 @@ void VST3OpenValhallaAudioProcessorEditor::resized()
     savePresetButton.setBounds(clearButton.getRight() + 10, modeComboBox.getY(), 60, 30);
     loadPresetButton.setBounds(savePresetButton.getRight() + 10, modeComboBox.getY(), 60, 30);
 
-    // Website Link
-    websiteLink.setBounds(bottomBar.getRight() - 110, modeComboBox.getY(), 100, 30);
-
     // Main panels layout
     // 5 Columns: Mix | Delay | Feedback | Mod | EQ
+
+    columnRects.clear();
 
     int margin = 10;
     int cols = 5;
     int colWidth = (area.getWidth() - (margin * (cols - 1))) / cols;
 
     auto getCol = [&](int index) -> juce::Rectangle<int> {
-        return area.withWidth(colWidth).translated(index * (colWidth + margin), 0);
+        auto r = area.withWidth(colWidth).translated(index * (colWidth + margin), 0);
+        columnRects.push_back(r);
+        return r;
     };
 
     // Helper to layout 2 knobs in a column
     auto layoutColumn = [&](int colIndex, juce::Slider& top, juce::Slider& bottom) {
         auto col = getCol(colIndex);
-        // Optional: draw panel background in paint via cached rects?
-        // For now just place sliders.
 
         int knobHeight = (col.getHeight() - 20) / 2;
         top.setBounds(col.removeFromTop(knobHeight).reduced(10));
