@@ -11,6 +11,8 @@ VST3OpenValhallaAudioProcessor::VST3OpenValhallaAudioProcessor()
        apvts(*this, nullptr, "Parameters", createParameterLayout())
 #endif
 {
+    stateA = apvts.copyState();
+    stateB = apvts.copyState();
 }
 
 VST3OpenValhallaAudioProcessor::~VST3OpenValhallaAudioProcessor()
@@ -21,89 +23,59 @@ juce::AudioProcessorValueTreeState::ParameterLayout VST3OpenValhallaAudioProcess
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
-    // Mix
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "MIX", "Mix", juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f), 50.0f));
-
-    // Width
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "WIDTH", "Width", juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f), 100.0f));
-
-    // Delay
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "DELAY", "Delay", juce::NormalisableRange<float>(0.0f, 1000.0f, 0.1f), 100.0f));
-
-    // Warp
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "WARP", "Warp", juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f), 0.0f));
-
-    // Feedback
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "FEEDBACK", "Feedback", juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f), 50.0f));
-
-    // Density
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "DENSITY", "Density", juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f), 0.0f));
-
-    // Mod Rate
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "MODRATE", "Mod Rate", juce::NormalisableRange<float>(0.0f, 5.0f, 0.01f), 0.5f));
-
-    // Mod Depth
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "MODDEPTH", "Mod Depth", juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f), 50.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("MIX", "Mix", 0.0f, 100.0f, 50.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("WIDTH", "Width", 0.0f, 100.0f, 100.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("DELAY", "Delay", 0.0f, 1000.0f, 100.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("WARP", "Warp", 0.0f, 100.0f, 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("FEEDBACK", "Feedback", 0.0f, 100.0f, 50.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("DENSITY", "Density", 0.0f, 100.0f, 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("MODRATE", "Mod Rate", 0.0f, 5.0f, 0.5f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("MODDEPTH", "Mod Depth", 0.0f, 100.0f, 50.0f));
 
     // Dynamic EQ
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "DYNFREQ", "Dyn Freq", juce::NormalisableRange<float>(20.0f, 20000.0f, 1.0f, 0.3f), 1000.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("DYNFREQ", "Dyn Freq", juce::NormalisableRange<float>(20.0f, 20000.0f, 1.0f, 0.3f), 1000.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("DYNQ", "Dyn Q", 0.1f, 10.0f, 1.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("DYNGAIN", "Dyn Gain", -18.0f, 18.0f, 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("DYNDEPTH", "Dyn Depth", -18.0f, 18.0f, 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("DYNTHRESH", "Dyn Thresh", -60.0f, 0.0f, -20.0f));
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "DYNQ", "Dyn Q", juce::NormalisableRange<float>(0.1f, 10.0f, 0.01f), 1.0f));
+    // New Features
+    layout.add(std::make_unique<juce::AudioParameterFloat>("DUCKING", "Ducking", 0.0f, 100.0f, 0.0f));
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "DYNGAIN", "Dyn Gain", juce::NormalisableRange<float>(-18.0f, 18.0f, 0.1f), 0.0f));
+    juce::StringArray syncOptions;
+    syncOptions.add("Free"); syncOptions.add("1/4"); syncOptions.add("1/8"); syncOptions.add("1/16");
+    layout.add(std::make_unique<juce::AudioParameterChoice>("PREDELAY_SYNC", "Sync", syncOptions, 0));
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "DYNDEPTH", "Dyn Depth", juce::NormalisableRange<float>(-18.0f, 18.0f, 0.1f), 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("SATURATION", "Saturation", 0.0f, 100.0f, 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("DIFFUSION", "Diffusion", 0.0f, 100.0f, 100.0f));
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "DYNTHRESH", "Dyn Thresh", juce::NormalisableRange<float>(-60.0f, 0.0f, 0.1f), -20.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("GATE_THRESH", "Gate Thresh", -100.0f, 0.0f, -100.0f));
 
-    // Ducking
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "DUCKING", "Ducking", juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f), 0.0f));
+    // 3-Band EQ
+    layout.add(std::make_unique<juce::AudioParameterFloat>("EQ3_LOW", "Low Gain", -12.0f, 12.0f, 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("EQ3_MID", "Mid Gain", -12.0f, 12.0f, 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("EQ3_HIGH", "High Gain", -12.0f, 12.0f, 0.0f));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>("MS_BALANCE", "M/S Bal", 0.0f, 100.0f, 50.0f));
+    layout.add(std::make_unique<juce::AudioParameterBool>("LIMITER", "Limiter", true));
+
+    // A/B Switch
+    layout.add(std::make_unique<juce::AudioParameterBool>("AB_SWITCH", "A/B", false));
 
     // Mode
     juce::StringArray modes;
-    modes.add("Twin Star");         // Gemini
-    modes.add("Sea Serpent");       // Hydra
-    modes.add("Horse Man");         // Centaurus
-    modes.add("Archer");            // Sagittarius
-    modes.add("Void Maker");        // Great Annihilator
-    modes.add("Galaxy Spiral");     // Andromeda
-    modes.add("Harp String");       // Lyra
-    modes.add("Goat Horn");         // Capricorn
-    modes.add("Nebula Cloud");      // Large Magellanic Cloud
-    modes.add("Triangle");          // Triangulum
-    modes.add("Cloud Major");       // Cirrus Major
-    modes.add("Cloud Minor");       // Cirrus Minor
-    modes.add("Queen Chair");       // Cassiopeia
-    modes.add("Hunter Belt");       // Orion
-    modes.add("Water Bearer");      // Aquarius
-    modes.add("Two Fish");          // Pisces
-    modes.add("Scorpion Tail");     // Scorpio
-    modes.add("Balance Scale");     // Libra
-    modes.add("Lion Heart");        // Leo
-    modes.add("Maiden");            // Virgo
-    modes.add("Seven Sisters");     // Pleiades
+    modes.add("Twin Star"); modes.add("Sea Serpent"); modes.add("Horse Man"); modes.add("Archer");
+    modes.add("Void Maker"); modes.add("Galaxy Spiral"); modes.add("Harp String"); modes.add("Goat Horn");
+    modes.add("Nebula Cloud"); modes.add("Triangle"); modes.add("Cloud Major"); modes.add("Cloud Minor");
+    modes.add("Queen Chair"); modes.add("Hunter Belt"); modes.add("Water Bearer"); modes.add("Two Fish");
+    modes.add("Scorpion Tail"); modes.add("Balance Scale"); modes.add("Lion Heart"); modes.add("Maiden");
+    modes.add("Seven Sisters");
 
-    layout.add(std::make_unique<juce::AudioParameterChoice>(
-        "MODE", "Mode", modes, 0));
+    layout.add(std::make_unique<juce::AudioParameterChoice>("MODE", "Mode", modes, 0));
 
     return layout;
 }
 
-//==============================================================================
 const juce::String VST3OpenValhallaAudioProcessor::getName() const
 {
     return JucePlugin_Name;
@@ -143,8 +115,7 @@ double VST3OpenValhallaAudioProcessor::getTailLengthSeconds() const
 
 int VST3OpenValhallaAudioProcessor::getNumPrograms()
 {
-    return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
-                // so this should be at least 1, even if you're not really implementing programs.
+    return 1;
 }
 
 int VST3OpenValhallaAudioProcessor::getCurrentProgram()
@@ -188,15 +159,10 @@ bool VST3OpenValhallaAudioProcessor::isBusesLayoutSupported (const BusesLayout& 
     juce::ignoreUnused (layouts);
     return true;
   #else
-    // This is the place where you check if the layout is supported.
-    // In this template code we only support mono or stereo.
-    // Some plugin hosts, such as certain GarageBand versions, will only
-    // load plugins that support stereo bus layouts.
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
      && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
-    // This checks if the input layout matches the output layout
    #if ! JucePlugin_IsSynth
     if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
         return false;
@@ -213,40 +179,52 @@ void VST3OpenValhallaAudioProcessor::processBlock (juce::AudioBuffer<float>& buf
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-    // In case we have more outputs than inputs, this code clears any output
-    // channels that didn't contain input data, (because these aren't
-    // guaranteed to be empty - they may contain garbage).
-    // This is here to avoid people getting screaming feedback
-    // when they first compile a plugin, but obviously you don't need to keep
-    // this code if your algorithm always overwrites all the output channels.
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    auto mix = apvts.getRawParameterValue("MIX")->load();
-    auto width = apvts.getRawParameterValue("WIDTH")->load();
-    auto delay = apvts.getRawParameterValue("DELAY")->load();
-    auto warp = apvts.getRawParameterValue("WARP")->load();
-    auto feedback = apvts.getRawParameterValue("FEEDBACK")->load();
-    auto density = apvts.getRawParameterValue("DENSITY")->load();
-    auto modRate = apvts.getRawParameterValue("MODRATE")->load();
-    auto modDepth = apvts.getRawParameterValue("MODDEPTH")->load();
-    auto dynFreq = apvts.getRawParameterValue("DYNFREQ")->load();
-    auto dynQ = apvts.getRawParameterValue("DYNQ")->load();
-    auto dynGain = apvts.getRawParameterValue("DYNGAIN")->load();
-    auto dynDepth = apvts.getRawParameterValue("DYNDEPTH")->load();
-    auto dynThresh = apvts.getRawParameterValue("DYNTHRESH")->load();
-    auto ducking = apvts.getRawParameterValue("DUCKING")->load();
-    auto mode = static_cast<int>(apvts.getRawParameterValue("MODE")->load());
+    ReverbParameters params;
+    params.mix = apvts.getRawParameterValue("MIX")->load();
+    params.width = apvts.getRawParameterValue("WIDTH")->load();
+    params.delay = apvts.getRawParameterValue("DELAY")->load();
+    params.warp = apvts.getRawParameterValue("WARP")->load();
+    params.feedback = apvts.getRawParameterValue("FEEDBACK")->load();
+    params.density = apvts.getRawParameterValue("DENSITY")->load();
+    params.modRate = apvts.getRawParameterValue("MODRATE")->load();
+    params.modDepth = apvts.getRawParameterValue("MODDEPTH")->load();
 
-    reverbProcessor.setParameters(
-        mix, width, delay, warp, feedback, density,
-        modRate, modDepth, dynFreq, dynQ, dynGain, dynDepth, dynThresh, ducking, mode
-    );
+    params.dynFreq = apvts.getRawParameterValue("DYNFREQ")->load();
+    params.dynQ = apvts.getRawParameterValue("DYNQ")->load();
+    params.dynGain = apvts.getRawParameterValue("DYNGAIN")->load();
+    params.dynDepth = apvts.getRawParameterValue("DYNDEPTH")->load();
+    params.dynThresh = apvts.getRawParameterValue("DYNTHRESH")->load();
+
+    params.ducking = apvts.getRawParameterValue("DUCKING")->load();
+    params.preDelaySync = (int)apvts.getRawParameterValue("PREDELAY_SYNC")->load();
+    params.saturation = apvts.getRawParameterValue("SATURATION")->load();
+    params.diffusion = apvts.getRawParameterValue("DIFFUSION")->load();
+    params.gateThresh = apvts.getRawParameterValue("GATE_THRESH")->load();
+
+    params.eq3Low = apvts.getRawParameterValue("EQ3_LOW")->load();
+    params.eq3Mid = apvts.getRawParameterValue("EQ3_MID")->load();
+    params.eq3High = apvts.getRawParameterValue("EQ3_HIGH")->load();
+
+    params.msBalance = apvts.getRawParameterValue("MS_BALANCE")->load();
+    params.limiterOn = (apvts.getRawParameterValue("LIMITER")->load() > 0.5f);
+
+    params.mode = (int)apvts.getRawParameterValue("MODE")->load();
+
+    if (auto* ph = getPlayHead())
+    {
+        juce::AudioPlayHead::CurrentPositionInfo info;
+        if (ph->getCurrentPosition(info))
+            params.bpm = info.bpm;
+    }
+
+    reverbProcessor.setParameters(params);
 
     juce::dsp::AudioBlock<float> block(buffer);
     juce::dsp::ProcessContextReplacing<float> context(block);
 
-    // Check for Clear Trigger
     if (clearTriggered.exchange(false))
     {
         reverbProcessor.reset();
@@ -258,7 +236,7 @@ void VST3OpenValhallaAudioProcessor::processBlock (juce::AudioBuffer<float>& buf
 //==============================================================================
 bool VST3OpenValhallaAudioProcessor::hasEditor() const
 {
-    return true; // (change this to false if you choose to not supply an editor)
+    return true;
 }
 
 juce::AudioProcessorEditor* VST3OpenValhallaAudioProcessor::createEditor()
@@ -269,10 +247,6 @@ juce::AudioProcessorEditor* VST3OpenValhallaAudioProcessor::createEditor()
 //==============================================================================
 void VST3OpenValhallaAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries
-
     auto state = apvts.copyState();
     std::unique_ptr<juce::XmlElement> xml (state.createXml());
     copyXmlToBinary (*xml, destData);
@@ -280,9 +254,6 @@ void VST3OpenValhallaAudioProcessor::getStateInformation (juce::MemoryBlock& des
 
 void VST3OpenValhallaAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
-
     std::unique_ptr<juce::XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
 
     if (xmlState.get() != nullptr)
@@ -293,11 +264,7 @@ void VST3OpenValhallaAudioProcessor::setStateInformation (const void* data, int 
 void VST3OpenValhallaAudioProcessor::savePreset(const juce::File& file)
 {
     auto state = apvts.copyState();
-
-    // Convert ValueTree to JSON object manually to ensure simple format
     juce::DynamicObject* jsonObject = new juce::DynamicObject();
-
-    // A robust way is to get all parameters from APVTS directly
     juce::DynamicObject* paramsObject = new juce::DynamicObject();
 
     auto& params = getParameters();
@@ -305,14 +272,6 @@ void VST3OpenValhallaAudioProcessor::savePreset(const juce::File& file)
     {
         if (auto* p = dynamic_cast<juce::AudioProcessorParameterWithID*>(param))
         {
-            paramsObject->setProperty(p->paramID, p->getValue()); // Normalized value 0..1
-            // OR we can save the denormalized value?
-            // Users usually want to see "Mix: 50.0", not "0.5".
-            // Let's save the raw denormalized value if possible.
-            // p->getValue() returns normalized.
-            // APVTS getRawParameterValue returns the actual float value.
-
-            // Save denormalized value
             paramsObject->setProperty(p->paramID, apvts.getRawParameterValue(p->paramID)->load());
         }
     }
@@ -329,14 +288,12 @@ void VST3OpenValhallaAudioProcessor::savePreset(const juce::File& file)
 
 void VST3OpenValhallaAudioProcessor::loadPreset(const juce::File& file)
 {
-    if (!file.existsAsFile())
-        return;
+    if (!file.existsAsFile()) return;
 
     juce::String jsonString = file.loadFileAsString();
     juce::var jsonVar = juce::JSON::parse(jsonString);
 
-    if (juce::JSON::toString(jsonVar) == "null") // Failed parse
-        return;
+    if (juce::JSON::toString(jsonVar) == "null") return;
 
     if (jsonVar.hasProperty("parameters"))
     {
@@ -352,7 +309,6 @@ void VST3OpenValhallaAudioProcessor::loadPreset(const juce::File& file)
                  auto* param = apvts.getParameter(paramID);
                  if (param)
                  {
-                     // Use RangedAudioParameter to support all parameter types generically
                      if (auto* rangedParam = dynamic_cast<juce::RangedAudioParameter*>(param))
                      {
                          float normalized = rangedParam->convertTo0to1(value);
@@ -364,85 +320,67 @@ void VST3OpenValhallaAudioProcessor::loadPreset(const juce::File& file)
     }
 }
 
-//==============================================================================
-// This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new VST3OpenValhallaAudioProcessor();
 }
+
 void VST3OpenValhallaAudioProcessor::resetAllParametersToDefault()
 {
-    // Defaults based on createParameterLayout
-    // Mix: 50.0
-    // Width: 100.0
-    // Delay: 100.0
-    // Warp: 0.0
-    // Feedback: 50.0
-    // Density: 0.0
-    // Mod Rate: 0.5
-    // Mod Depth: 50.0
-    // EQ High: 5000.0
-    // EQ Low: 200.0
+    auto resetParam = [&](const juce::String& id, float defaultVal) {
+        if (auto* p = apvts.getParameter(id))
+        {
+            if (auto* range = dynamic_cast<juce::RangedAudioParameter*>(p))
+                p->setValueNotifyingHost(range->convertTo0to1(defaultVal));
+        }
+    };
 
-    if (auto* p = apvts.getParameter("MIX")) p->setValueNotifyingHost(p->convertTo0to1(50.0f));
-    if (auto* p = apvts.getParameter("WIDTH")) p->setValueNotifyingHost(p->convertTo0to1(100.0f));
-    if (auto* p = apvts.getParameter("DELAY")) p->setValueNotifyingHost(p->convertTo0to1(100.0f));
-    if (auto* p = apvts.getParameter("WARP")) p->setValueNotifyingHost(p->convertTo0to1(0.0f));
-    if (auto* p = apvts.getParameter("FEEDBACK")) p->setValueNotifyingHost(p->convertTo0to1(50.0f));
-    if (auto* p = apvts.getParameter("DENSITY")) p->setValueNotifyingHost(p->convertTo0to1(0.0f));
-    if (auto* p = apvts.getParameter("MODRATE")) p->setValueNotifyingHost(p->convertTo0to1(0.5f));
-    if (auto* p = apvts.getParameter("MODDEPTH")) p->setValueNotifyingHost(p->convertTo0to1(50.0f));
-    if (auto* p = apvts.getParameter("DYNFREQ")) p->setValueNotifyingHost(p->convertTo0to1(1000.0f));
-    if (auto* p = apvts.getParameter("DYNQ")) p->setValueNotifyingHost(p->convertTo0to1(1.0f));
-    if (auto* p = apvts.getParameter("DYNGAIN")) p->setValueNotifyingHost(p->convertTo0to1(0.0f));
-    if (auto* p = apvts.getParameter("DYNDEPTH")) p->setValueNotifyingHost(p->convertTo0to1(0.0f));
-    if (auto* p = apvts.getParameter("DYNTHRESH")) p->setValueNotifyingHost(p->convertTo0to1(-20.0f));
-    if (auto* p = apvts.getParameter("DUCKING")) p->setValueNotifyingHost(p->convertTo0to1(0.0f));
+    resetParam("MIX", 50.0f);
+    resetParam("WIDTH", 100.0f);
+    resetParam("DELAY", 100.0f);
+    resetParam("WARP", 0.0f);
+    resetParam("FEEDBACK", 50.0f);
+    resetParam("DENSITY", 0.0f);
+    resetParam("MODRATE", 0.5f);
+    resetParam("MODDEPTH", 50.0f);
+
+    resetParam("DYNFREQ", 1000.0f);
+    resetParam("DYNQ", 1.0f);
+    resetParam("DYNGAIN", 0.0f);
+    resetParam("DYNDEPTH", 0.0f);
+    resetParam("DYNTHRESH", -20.0f);
+
+    resetParam("DUCKING", 0.0f);
+    resetParam("PREDELAY_SYNC", 0.0f); // Free
+    resetParam("SATURATION", 0.0f);
+    resetParam("DIFFUSION", 100.0f);
+    resetParam("GATE_THRESH", -100.0f);
+
+    resetParam("EQ3_LOW", 0.0f);
+    resetParam("EQ3_MID", 0.0f);
+    resetParam("EQ3_HIGH", 0.0f);
+
+    resetParam("MS_BALANCE", 50.0f);
+
+    if (auto* p = apvts.getParameter("LIMITER")) p->setValueNotifyingHost(1.0f); // On by default
 }
 
 void VST3OpenValhallaAudioProcessor::setParametersForMode(int modeIndex)
 {
-    auto setParam = [&](const juce::String& id, float value) {
-        if (auto* p = apvts.getParameter(id))
-            p->setValueNotifyingHost(p->convertTo0to1(value));
-    };
+}
 
-    // Default values
-    float delay = 100.0f;
-    float warp = 0.0f;
-    float feedback = 50.0f;
-    float density = 0.0f;
-    float modDepth = 50.0f;
-
-    switch (modeIndex)
+void VST3OpenValhallaAudioProcessor::toggleAB()
+{
+    if (isStateA)
     {
-        case TwinStar:      delay = 50.0f; density = 20.0f; warp = 10.0f; break;
-        case SeaSerpent:    delay = 80.0f; modDepth = 70.0f; warp = 20.0f; break;
-        case HorseMan:      delay = 120.0f; feedback = 60.0f; break;
-        case Archer:        delay = 150.0f; feedback = 60.0f; density = 30.0f; break;
-        case VoidMaker:     delay = 300.0f; feedback = 80.0f; density = 0.0f; break;
-        case GalaxySpiral:  delay = 400.0f; feedback = 85.0f; break;
-        case HarpString:    delay = 40.0f; feedback = 70.0f; break;
-        case GoatHorn:      delay = 60.0f; feedback = 60.0f; break;
-        case NebulaCloud:   delay = 200.0f; feedback = 75.0f; break;
-        case Triangle:      delay = 250.0f; feedback = 50.0f; break;
-        case CloudMajor:    delay = 100.0f; feedback = 60.0f; warp = 30.0f; break;
-        case CloudMinor:    delay = 100.0f; feedback = 60.0f; warp = 40.0f; break;
-        case QueenChair:    delay = 350.0f; feedback = 90.0f; break;
-        case HunterBelt:    delay = 380.0f; feedback = 90.0f; break;
-        case WaterBearer:   delay = 500.0f; feedback = 40.0f; break;
-        case TwoFish:       delay = 500.0f; feedback = 45.0f; break;
-        case ScorpionTail:  delay = 180.0f; feedback = 65.0f; break;
-        case BalanceScale:  delay = 200.0f; feedback = 70.0f; break;
-        case LionHeart:     delay = 800.0f; feedback = 95.0f; density = 100.0f; break;
-        case Maiden:        delay = 50.0f; feedback = 40.0f; break;
-        case SevenSisters:  delay = 150.0f; feedback = 60.0f; break;
-        default:            break;
+        stateA = apvts.copyState();
+        apvts.replaceState(stateB);
+        isStateA = false;
     }
-
-    setParam("DELAY", delay);
-    setParam("WARP", warp);
-    setParam("FEEDBACK", feedback);
-    setParam("DENSITY", density);
-    setParam("MODDEPTH", modDepth);
+    else
+    {
+        stateB = apvts.copyState();
+        apvts.replaceState(stateA);
+        isStateA = true;
+    }
 }

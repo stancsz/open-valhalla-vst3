@@ -64,7 +64,13 @@ public:
     void resetAllParametersToDefault();
     void setParametersForMode(int modeIndex);
 
+    // A/B Switching
+    void toggleAB();
+    bool isStateA = true;
+
 private:
+    juce::ValueTree stateA;
+    juce::ValueTree stateB;
 
     // Mode Enum
     enum Mode

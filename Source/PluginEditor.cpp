@@ -1,34 +1,55 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-//==============================================================================
 VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3OpenValhallaAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
     setLookAndFeel(&lookAndFeel);
 
+    // Mix Group
     addSlider(mixSlider, mixAtt, "MIX", "MIX");
-    addSlider(widthSlider, widthAtt, "WIDTH", "WIDTH");
-
+    addSlider(msBalanceSlider, msBalanceAtt, "MS_BALANCE", "M/S WIDTH");
     addSlider(duckingSlider, duckingAtt, "DUCKING", "DUCKING");
+    addToggle(limiterButton, limiterAtt, "LIMITER", "LIMITER");
 
+    // Time Group
     addSlider(delaySlider, delayAtt, "DELAY", "DELAY");
-    addSlider(warpSlider, warpAtt, "WARP", "WARP");
-
     addSlider(feedbackSlider, feedbackAtt, "FEEDBACK", "FEEDBACK");
     addSlider(densitySlider, densityAtt, "DENSITY", "DENSITY");
+    addSlider(diffusionSlider, diffusionAtt, "DIFFUSION", "DIFFUSION");
 
-    addSlider(modRateSlider, modRateAtt, "MODRATE", "MOD RATE");
-    addSlider(modDepthSlider, modDepthAtt, "MODDEPTH", "MOD DEPTH");
+    // Mod Group
+    addSlider(widthSlider, widthAtt, "WIDTH", "WIDTH");
+    addSlider(warpSlider, warpAtt, "WARP", "WARP");
+    addSlider(modRateSlider, modRateAtt, "MODRATE", "RATE");
+    addSlider(modDepthSlider, modDepthAtt, "MODDEPTH", "DEPTH");
+    addSlider(saturationSlider, saturationAtt, "SATURATION", "SAT");
+    addSlider(gateThreshSlider, gateThreshAtt, "GATE_THRESH", "GATE");
 
-    // Dynamic EQ
+    // Filter Group
     addSlider(dynFreqSlider, dynFreqAtt, "DYNFREQ", "DYN FREQ");
     addSlider(dynQSlider, dynQAtt, "DYNQ", "DYN Q");
     addSlider(dynGainSlider, dynGainAtt, "DYNGAIN", "DYN GAIN");
-    addSlider(dynDepthSlider, dynDepthAtt, "DYNDEPTH", "DYN DEPTH");
-    addSlider(dynThreshSlider, dynThreshAtt, "DYNTHRESH", "DYN THRESH");
+    addSlider(dynThreshSlider, dynThreshAtt, "DYNTHRESH", "DYN THR");
+    addSlider(eqLowSlider, eqLowAtt, "EQ3_LOW", "LOW");
+    addSlider(eqMidSlider, eqMidAtt, "EQ3_MID", "MID");
+    addSlider(eqHighSlider, eqHighAtt, "EQ3_HIGH", "HIGH");
 
-    // Mode
+    // Utility Group
+    addComboBox(preDelaySyncBox, preDelaySyncAtt, "PREDELAY_SYNC", "SYNC");
+    preDelaySyncBox.addItemList({"Free", "1/4", "1/8", "1/16"}, 1);
+
+    addAndMakeVisible(abSwitchButton);
+    abSwitchButton.setButtonText("A/B");
+    abSwitchButton.setToggleState(audioProcessor.isStateA, juce::dontSendNotification);
+    abSwitchButton.onClick = [this]() {
+        audioProcessor.toggleAB();
+        abSwitchButton.setToggleState(audioProcessor.isStateA, juce::dontSendNotification); // This assumes A is checked? Or maybe A is one state and B is off?
+        // Let's make it clearer:
+        abSwitchButton.setButtonText(audioProcessor.isStateA ? "A" : "B");
+    };
+    abSwitchButton.setButtonText(audioProcessor.isStateA ? "A" : "B"); // Initialize text
+
     addAndMakeVisible(modeComboBox);
     modeAtt = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(audioProcessor.getAPVTS(), "MODE", modeComboBox);
     modeComboBox.addItemList(audioProcessor.getAPVTS().getParameter("MODE")->getAllValueStrings(), 1);
@@ -36,206 +57,230 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
 
     modeLabel.setText("MODE", juce::dontSendNotification);
     modeLabel.setJustificationType(juce::Justification::centred);
-    modeLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF888888));
+    modeLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF80FFEA));
+    modeLabel.setFont(juce::Font(12.0f, juce::Font::bold));
     addAndMakeVisible(modeLabel);
-    modeComboBox.setTooltip("Selects the reverb algorithm.");
+    modeLabel.attachToComponent(&modeComboBox, false);
 
-    // Clear Button
     addAndMakeVisible(clearButton);
-    clearButton.setTooltip("Resets reverb buffer and parameters.");
-    clearButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF444444));
-    clearButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
-    clearButton.onClick = [this]()
-    {
-        audioProcessor.clearTriggered = true;
-        audioProcessor.resetAllParametersToDefault();
-    };
+    clearButton.onClick = [this]() { audioProcessor.clearTriggered = true; audioProcessor.resetAllParametersToDefault(); };
 
-    modeComboBox.onChange = [this]()
-    {
-        audioProcessor.setParametersForMode(modeComboBox.getSelectedId() - 1);
-    };
-
-    // Preset Buttons
     addAndMakeVisible(savePresetButton);
-    savePresetButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF444444));
-    savePresetButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
-    savePresetButton.onClick = [this]()
-    {
-        fileChooser = std::make_unique<juce::FileChooser>("Save Preset",
-            juce::File::getSpecialLocation(juce::File::userHomeDirectory),
-            "*.json");
-
-        auto folderChooserFlags = juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles;
-
-        fileChooser->launchAsync(folderChooserFlags, [this](const juce::FileChooser& chooser)
-        {
-            auto file = chooser.getResult();
-            if (file != juce::File{})
-            {
-                // Ensure .json extension
-                if (!file.hasFileExtension("json"))
-                    file = file.withFileExtension("json");
-
-                audioProcessor.savePreset(file);
-            }
-        });
+    savePresetButton.onClick = [this]() {
+        fileChooser = std::make_unique<juce::FileChooser>("Save", juce::File::getSpecialLocation(juce::File::userHomeDirectory), "*.json");
+        fileChooser->launchAsync(juce::FileBrowserComponent::saveMode, [this](const juce::FileChooser& c) { audioProcessor.savePreset(c.getResult().withFileExtension("json")); });
     };
 
     addAndMakeVisible(loadPresetButton);
-    loadPresetButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF444444));
-    loadPresetButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
-    loadPresetButton.onClick = [this]()
-    {
-        fileChooser = std::make_unique<juce::FileChooser>("Load Preset",
-            juce::File::getSpecialLocation(juce::File::userHomeDirectory),
-            "*.json");
-
-        auto folderChooserFlags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles;
-
-        fileChooser->launchAsync(folderChooserFlags, [this](const juce::FileChooser& chooser)
-        {
-            auto file = chooser.getResult();
-            if (file != juce::File{})
-            {
-                audioProcessor.loadPreset(file);
-            }
-        });
+    loadPresetButton.onClick = [this]() {
+        fileChooser = std::make_unique<juce::FileChooser>("Load", juce::File::getSpecialLocation(juce::File::userHomeDirectory), "*.json");
+        fileChooser->launchAsync(juce::FileBrowserComponent::openMode, [this](const juce::FileChooser& c) { audioProcessor.loadPreset(c.getResult()); });
     };
 
-    // Website Link
     addAndMakeVisible(websiteLink);
     websiteLink.setButtonText("ov.stanchen.ca");
     websiteLink.setURL(juce::URL("https://ov.stanchen.ca"));
-    websiteLink.setColour(juce::HyperlinkButton::textColourId, juce::Colour(0xFF888888));
 
-    setSize (850, 450);
+    modeComboBox.onChange = [this]() { audioProcessor.setParametersForMode(modeComboBox.getSelectedId() - 1); };
+
+    setSize(1150, 600);
 }
 
-VST3OpenValhallaAudioProcessorEditor::~VST3OpenValhallaAudioProcessorEditor()
-{
-    setLookAndFeel(nullptr);
-}
+VST3OpenValhallaAudioProcessorEditor::~VST3OpenValhallaAudioProcessorEditor() { setLookAndFeel(nullptr); }
 
 void VST3OpenValhallaAudioProcessorEditor::addSlider(juce::Slider& slider, std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>& attachment, const juce::String& paramID, const juce::String& name)
 {
     slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 70, 20);
-    slider.setPopupDisplayEnabled(true, false, this); // Show value on drag
-
-    if (paramID == "MIX") slider.setTooltip("Controls the wet/dry balance.");
-    else if (paramID == "WIDTH") slider.setTooltip("Adjusts stereo width.");
-    else if (paramID == "DELAY") slider.setTooltip("Sets pre-delay time (ms).");
-    else if (paramID == "WARP") slider.setTooltip("Adds modulation character.");
-    else if (paramID == "FEEDBACK") slider.setTooltip("Controls decay time.");
-    else if (paramID == "DENSITY") slider.setTooltip("Adjusts diffusion density.");
-    else if (paramID == "MODRATE") slider.setTooltip("LFO speed.");
-    else if (paramID == "MODDEPTH") slider.setTooltip("LFO intensity.");
-    else if (paramID == "DYNFREQ") slider.setTooltip("Dynamic EQ Frequency.");
-    else if (paramID == "DYNQ") slider.setTooltip("Dynamic EQ Bandwidth (Q).");
-    else if (paramID == "DYNGAIN") slider.setTooltip("Dynamic EQ Static Gain.");
-    else if (paramID == "DYNDEPTH") slider.setTooltip("Dynamic EQ Modulation Depth.");
-    else if (paramID == "DYNTHRESH") slider.setTooltip("Dynamic EQ Threshold.");
-    else if (paramID == "DUCKING") slider.setTooltip("Compresses reverb when input is loud.");
-
+    slider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    slider.setPopupDisplayEnabled(true, false, this);
+    slider.setTooltip(name);
     addAndMakeVisible(slider);
 
     auto label = std::make_unique<juce::Label>();
     label->setText(name, juce::dontSendNotification);
     label->setJustificationType(juce::Justification::centred);
-    label->setColour(juce::Label::textColourId, juce::Colour(0xFFAAAAAA));
-    label->setFont(juce::Font(12.0f, juce::Font::bold));
-    label->attachToComponent(&slider, false); // Attached above
+    label->setColour(juce::Label::textColourId, juce::Colours::white);
+    label->setFont(juce::Font(11.0f, juce::Font::bold));
+    label->attachToComponent(&slider, false);
     addAndMakeVisible(*label);
     labels.push_back(std::move(label));
 
-    attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.getAPVTS(), paramID, slider);
+    if (audioProcessor.getAPVTS().getParameter(paramID))
+        attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.getAPVTS(), paramID, slider);
 }
 
-//==============================================================================
-void VST3OpenValhallaAudioProcessorEditor::paint (juce::Graphics& g)
+void VST3OpenValhallaAudioProcessorEditor::addComboBox(juce::ComboBox& box, std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment>& attachment, const juce::String& paramID, const juce::String& name)
 {
-    // Gradient Background
-    juce::ColourGradient bgGradient(juce::Colour(0xFF0F0F1A), 0, 0, juce::Colour(0xFF1A1A2E), 0, (float)getHeight(), false);
+    box.setJustificationType(juce::Justification::centred);
+    addAndMakeVisible(box);
+    if (audioProcessor.getAPVTS().getParameter(paramID))
+        attachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(audioProcessor.getAPVTS(), paramID, box);
+
+    auto label = std::make_unique<juce::Label>();
+    label->setText(name, juce::dontSendNotification);
+    label->setJustificationType(juce::Justification::centred);
+    label->setColour(juce::Label::textColourId, juce::Colours::white);
+    label->setFont(juce::Font(11.0f, juce::Font::bold));
+    label->attachToComponent(&box, false);
+    addAndMakeVisible(*label);
+    labels.push_back(std::move(label));
+}
+
+void VST3OpenValhallaAudioProcessorEditor::addToggle(juce::ToggleButton& button, std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>& attachment, const juce::String& paramID, const juce::String& name)
+{
+    button.setButtonText(name);
+    addAndMakeVisible(button);
+    if (audioProcessor.getAPVTS().getParameter(paramID))
+        attachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(audioProcessor.getAPVTS(), paramID, button);
+}
+
+void VST3OpenValhallaAudioProcessorEditor::paint(juce::Graphics& g)
+{
+    juce::ColourGradient bgGradient(juce::Colour(0xFF101010), 0, 0, juce::Colour(0xFF202028), 0, (float)getHeight(), false);
     g.setGradientFill(bgGradient);
     g.fillAll();
 
-    // Header
-    g.setColour (juce::Colours::white);
-    g.setFont (juce::Font("Futura", 28.0f, juce::Font::bold));
-    g.drawFittedText ("OPEN VALHALLA", getLocalBounds().removeFromTop(50), juce::Justification::centred, 1);
+    g.setColour(juce::Colours::white);
+    g.setFont(juce::Font("Futura", 30.0f, juce::Font::bold));
+    g.drawFittedText("OPEN VALHALLA", getLocalBounds().removeFromTop(50), juce::Justification::centred, 1);
 
-    // Draw Group Panels
-    for (const auto& rect : columnRects)
+    auto area = getLocalBounds().reduced(15);
+    area.removeFromTop(50);
+    area.removeFromBottom(50);
+
+    int cols = 5;
+    int colWidth = area.getWidth() / cols;
+
+    juce::String titles[] = { "MIX / LEVEL", "TIME / SIZE", "MODULATION", "FILTERS / EQ", "UTILITY" };
+
+    for (int i=0; i<cols; ++i)
     {
-        g.setColour(juce::Colour(0xFF252535).withAlpha(0.6f));
-        g.fillRoundedRectangle(rect.toFloat(), 10.0f);
-        g.setColour(juce::Colour(0xFF353545));
-        g.drawRoundedRectangle(rect.toFloat(), 10.0f, 1.0f);
+        auto r = area.withWidth(colWidth - 10).translated(i * colWidth + 5, 0);
+
+        g.setColour(juce::Colour(0xFF1E1E1E));
+        g.fillRoundedRectangle(r.toFloat(), 8.0f);
+        g.setColour(juce::Colour(0xFF303030));
+        g.drawRoundedRectangle(r.toFloat(), 8.0f, 1.5f);
+
+        auto header = r.removeFromTop(30);
+        g.setColour(juce::Colour(0xFF80FFEA));
+        g.setFont(juce::Font(16.0f, juce::Font::bold));
+        g.drawText(titles[i], header, juce::Justification::centred, false);
     }
 }
 
 void VST3OpenValhallaAudioProcessorEditor::resized()
 {
-    auto area = getLocalBounds().reduced(20);
-    auto topBar = area.removeFromTop(60); // Title area
-    auto bottomBar = area.removeFromBottom(50); // Mode selector
+    auto area = getLocalBounds().reduced(15);
+    area.removeFromTop(50);
+    auto bottomBar = area.removeFromBottom(50);
 
-    // Website Link (Centered under title)
-    websiteLink.setBounds(0, 45, getWidth(), 20);
-    websiteLink.setJustificationType(juce::Justification::centred);
-
-    // Mode Selector centered
-    auto modeArea = bottomBar.reduced(0, 5);
-    modeLabel.setBounds(modeArea.removeFromLeft(60));
-    modeComboBox.setBounds(modeArea.removeFromLeft(200));
-    // Center the combobox logic:
-    modeComboBox.setBounds(bottomBar.getCentreX() - 100, bottomBar.getY() + 10, 200, 30);
-    modeLabel.setBounds(modeComboBox.getX() - 50, modeComboBox.getY(), 45, 30);
-
-    // Clear Button
-    clearButton.setBounds(modeComboBox.getRight() + 10, modeComboBox.getY(), 60, 30);
-
-    // Preset Buttons
-    savePresetButton.setBounds(clearButton.getRight() + 10, modeComboBox.getY(), 60, 30);
-    loadPresetButton.setBounds(savePresetButton.getRight() + 10, modeComboBox.getY(), 60, 30);
-
-    // 5 Columns, 3 Rows
-    columnRects.clear();
-
-    int margin = 10;
     int cols = 5;
-    int colWidth = (area.getWidth() - (margin * (cols - 1))) / cols;
+    int colWidth = area.getWidth() / cols;
 
-    auto getCol = [&](int index) -> juce::Rectangle<int> {
-        auto r = area.withWidth(colWidth).translated(index * (colWidth + margin), 0);
-        columnRects.push_back(r);
-        return r;
+    auto getGroup = [&](int i) {
+        return area.withWidth(colWidth - 10).translated(i * colWidth + 5, 0).reduced(5, 35); // Margin for title
     };
 
-    // Layout helper for 3 rows
-    auto layoutColumn3 = [&](int colIndex, juce::Slider& row1, juce::Slider& row2, juce::Slider* row3) {
-        auto col = getCol(colIndex);
-        int knobHeight = (col.getHeight() - 20) / 3;
+    // 1. MIX / LEVEL
+    {
+        auto r = getGroup(0);
+        // Large Mix Knob (40% height)
+        auto top = r.removeFromTop(r.getHeight() * 0.4f);
+        mixSlider.setBounds(top.reduced(10));
 
-        row1.setBounds(col.removeFromTop(knobHeight).reduced(5)); // Smaller padding
-        row2.setBounds(col.removeFromTop(knobHeight).reduced(5));
-        if (row3)
-            row3->setBounds(col.reduced(5));
-    };
+        // M/S Width, Ducking, Limiter in remaining space
+        int h = r.getHeight() / 3;
+        msBalanceSlider.setBounds(r.removeFromTop(h).reduced(15, 5));
+        duckingSlider.setBounds(r.removeFromTop(h).reduced(15, 5));
+        limiterButton.setBounds(r.removeFromTop(h).reduced(15, 5));
+    }
 
-    // Col 1: Mix, Width, Ducking
-    layoutColumn3(0, mixSlider, widthSlider, &duckingSlider);
+    // 2. TIME / SIZE
+    {
+        auto r = getGroup(1);
+        // Large Delay Knob (40% height)
+        auto top = r.removeFromTop(r.getHeight() * 0.4f);
+        delaySlider.setBounds(top.reduced(10));
 
-    // Col 2: Delay, Warp, Feedback
-    layoutColumn3(1, delaySlider, warpSlider, &feedbackSlider);
+        int h = r.getHeight() / 3;
+        feedbackSlider.setBounds(r.removeFromTop(h).reduced(15, 5));
+        densitySlider.setBounds(r.removeFromTop(h).reduced(15, 5));
+        diffusionSlider.setBounds(r.removeFromTop(h).reduced(15, 5));
+    }
 
-    // Col 3: Density, ModRate, ModDepth
-    layoutColumn3(2, densitySlider, modRateSlider, &modDepthSlider);
+    // 3. MODULATION
+    {
+        auto r = getGroup(2);
+        // Large Width Knob (40% height) - Highlighting "Width" as requested
+        auto top = r.removeFromTop(r.getHeight() * 0.4f);
+        widthSlider.setBounds(top.reduced(10));
 
-    // Col 4: DynFreq, DynQ, DynGain
-    layoutColumn3(3, dynFreqSlider, dynQSlider, &dynGainSlider);
+        // Grid for others (Warp, Rate, Depth, Sat, Gate)
+        // 5 controls remaining.
+        // Row 1: Warp, Rate
+        // Row 2: Depth, Sat
+        // Row 3: Gate
 
-    // Col 5: DynDepth, DynThresh
-    layoutColumn3(4, dynDepthSlider, dynThreshSlider, nullptr);
+        int rowH = r.getHeight() / 3;
+        int colW = r.getWidth() / 2;
+
+        auto row1 = r.removeFromTop(rowH);
+        warpSlider.setBounds(row1.removeFromLeft(colW).reduced(5));
+        modRateSlider.setBounds(row1.reduced(5));
+
+        auto row2 = r.removeFromTop(rowH);
+        modDepthSlider.setBounds(row2.removeFromLeft(colW).reduced(5));
+        saturationSlider.setBounds(row2.reduced(5));
+
+        auto row3 = r.removeFromTop(rowH);
+        gateThreshSlider.setBounds(row3.removeFromLeft(colW).reduced(5));
+        // Empty slot next to gate
+    }
+
+    // 4. FILTERS / EQ
+    {
+        auto r = getGroup(3);
+
+        // DynEQ Grid (Top 60%)
+        auto dynArea = r.removeFromTop(r.getHeight() * 0.6f);
+        int dynH = dynArea.getHeight() / 2;
+        int dynW = dynArea.getWidth() / 2;
+
+        dynFreqSlider.setBounds(dynArea.getX(), dynArea.getY(), dynW, dynH);
+        dynQSlider.setBounds(dynArea.getX() + dynW, dynArea.getY(), dynW, dynH);
+        dynGainSlider.setBounds(dynArea.getX(), dynArea.getY() + dynH, dynW, dynH);
+        dynThreshSlider.setBounds(dynArea.getX() + dynW, dynArea.getY() + dynH, dynW, dynH);
+
+        // 3-Band EQ Row (Bottom 40%)
+        int eqW = r.getWidth() / 3;
+        int eqH = r.getHeight();
+
+        eqLowSlider.setBounds(r.getX(), r.getY(), eqW, eqH);
+        eqMidSlider.setBounds(r.getX() + eqW, r.getY(), eqW, eqH);
+        eqHighSlider.setBounds(r.getX() + 2*eqW, r.getY(), eqW, eqH);
+    }
+
+    // 5. UTILITY
+    {
+        auto r = getGroup(4);
+        int h = r.getHeight() / 4;
+
+        modeComboBox.setBounds(r.removeFromTop(h).reduced(5, 15));
+        preDelaySyncBox.setBounds(r.removeFromTop(h).reduced(5, 15));
+
+        // A/B and Save
+        auto row3 = r.removeFromTop(h);
+        int w = row3.getWidth() / 2;
+        abSwitchButton.setBounds(row3.removeFromLeft(w).reduced(5));
+        savePresetButton.setBounds(row3.reduced(5));
+
+        // Load and Clear
+        auto row4 = r.removeFromTop(h);
+        loadPresetButton.setBounds(row4.removeFromLeft(w).reduced(5));
+        clearButton.setBounds(row4.reduced(5));
+    }
+
+    // Bottom Bar
+    websiteLink.setBounds(bottomBar.reduced(10));
 }

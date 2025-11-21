@@ -3,22 +3,21 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
 
-//==============================================================================
-/**
-*/
 class ValhallaLookAndFeel : public juce::LookAndFeel_V4
 {
 public:
     ValhallaLookAndFeel()
     {
-        // Modern Color Palette
-        setColour(juce::Slider::thumbColourId, juce::Colour(0xFFE0E0E0)); // Off-white
-        setColour(juce::Slider::rotarySliderFillColourId, juce::Colour(0xFF66F2D5)); // Cyan/Mint accent
-        setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(0xFF2A2A2A)); // Dark grey track
-        setColour(juce::Label::textColourId, juce::Colour(0xFFCCCCCC)); // Light grey text
+        setColour(juce::Slider::thumbColourId, juce::Colours::white);
+        setColour(juce::Slider::rotarySliderFillColourId, juce::Colour(0xFF80FFEA)); // Brighter Cyan
+        setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(0xFF606060)); // Visible Grey
+        setColour(juce::Label::textColourId, juce::Colours::white);
         setColour(juce::Slider::textBoxTextColourId, juce::Colour(0xFFFFFFFF));
         setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
-        setColour(juce::Slider::textBoxBackgroundColourId, juce::Colours::transparentBlack);
+
+        setColour(juce::ToggleButton::tickColourId, juce::Colours::white);
+        setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF404040));
+        setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     }
 
     void drawRotarySlider (juce::Graphics& g, int x, int y, int width, int height, float sliderPos,
@@ -27,44 +26,42 @@ public:
         auto radius = (float) juce::jmin (width / 2, height / 2) - 4.0f;
         auto centreX = (float) x + (float) width  * 0.5f;
         auto centreY = (float) y + (float) height * 0.5f;
-        auto rx = centreX - radius;
-        auto ry = centreY - radius;
-        auto rw = radius * 2.0f;
-        auto angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
 
-        // 1. Background Track (Arc)
+        // Track
         juce::Path backgroundArc;
         backgroundArc.addCentredArc(centreX, centreY, radius, radius, 0.0f, rotaryStartAngle, rotaryEndAngle, true);
 
         g.setColour(findColour(juce::Slider::rotarySliderOutlineColourId));
-        g.strokePath(backgroundArc, juce::PathStrokeType(4.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+        g.strokePath(backgroundArc, juce::PathStrokeType(3.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
-        // 2. Value Arc (Filled)
+        // Value
         if (slider.isEnabled())
         {
             juce::Path valueArc;
+            auto angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
             valueArc.addCentredArc(centreX, centreY, radius, radius, 0.0f, rotaryStartAngle, angle, true);
 
             g.setColour(findColour(juce::Slider::rotarySliderFillColourId));
-            g.strokePath(valueArc, juce::PathStrokeType(4.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+            g.strokePath(valueArc, juce::PathStrokeType(3.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
         }
 
-        // 3. Knob Body
+        // Knob Body
         auto knobRadius = radius * 0.6f;
-        g.setColour(juce::Colour(0xFF202020)); // Dark knob body
+        g.setColour(juce::Colour(0xFF252525));
         g.fillEllipse(centreX - knobRadius, centreY - knobRadius, knobRadius * 2.0f, knobRadius * 2.0f);
 
-        g.setColour(juce::Colour(0xFF404040)); // Slight outline
+        g.setColour(juce::Colour(0xFF505050));
         g.drawEllipse(centreX - knobRadius, centreY - knobRadius, knobRadius * 2.0f, knobRadius * 2.0f, 1.0f);
 
-        // 4. Pointer Indicator
+        // Pointer
         juce::Path p;
-        auto pointerLength = knobRadius * 0.7f;
+        auto pointerLength = knobRadius * 0.8f;
         auto pointerThickness = 3.0f;
+        auto angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
         p.addRectangle(-pointerThickness * 0.5f, -pointerLength, pointerThickness, pointerLength);
         p.applyTransform(juce::AffineTransform::rotation(angle).translated(centreX, centreY));
 
-        g.setColour(juce::Colours::white);
+        g.setColour(findColour(juce::Slider::thumbColourId));
         g.fillPath(p);
     }
 
@@ -86,16 +83,11 @@ public:
                               juce::jmax (1, (int) (textArea.getHeight() / font.getHeight())),
                               label.getMinimumHorizontalScale());
         }
-        else if (label.isEnabled())
-        {
-            g.setColour (label.findColour (juce::Label::outlineColourId));
-            g.drawRect (label.getLocalBounds());
-        }
     }
 
     juce::Font getLabelFont (juce::Label& label) override
     {
-        return juce::Font("Verdana", 12.0f, juce::Font::bold); // cleaner font
+        return juce::Font("Verdana", 12.0f, juce::Font::bold);
     }
 };
 
@@ -105,7 +97,6 @@ public:
     VST3OpenValhallaAudioProcessorEditor (VST3OpenValhallaAudioProcessor&);
     ~VST3OpenValhallaAudioProcessorEditor() override;
 
-    //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
 
@@ -113,47 +104,50 @@ private:
     VST3OpenValhallaAudioProcessor& audioProcessor;
     ValhallaLookAndFeel lookAndFeel;
 
-    // Helper to add slider
     void addSlider(juce::Slider& slider, std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>& attachment, const juce::String& paramID, const juce::String& name);
+    void addComboBox(juce::ComboBox& box, std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment>& attachment, const juce::String& paramID, const juce::String& name);
+    void addToggle(juce::ToggleButton& button, std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>& attachment, const juce::String& paramID, const juce::String& name);
 
-    // Sliders
-    juce::Slider mixSlider, widthSlider;
-    juce::Slider delaySlider, warpSlider;
-    juce::Slider feedbackSlider, densitySlider;
-    juce::Slider modRateSlider, modDepthSlider;
-    juce::Slider dynFreqSlider, dynQSlider, dynGainSlider, dynDepthSlider, dynThreshSlider;
-    juce::Slider duckingSlider;
+    // Sliders & Controls
+    juce::Slider mixSlider, widthSlider, duckingSlider;
+    juce::ComboBox preDelaySyncBox;
+
+    juce::Slider delaySlider, warpSlider, feedbackSlider, saturationSlider;
+
+    juce::Slider densitySlider, modRateSlider, modDepthSlider, diffusionSlider;
+
+    juce::Slider dynFreqSlider, dynQSlider, dynGainSlider, dynThreshSlider;
+
+    juce::Slider eqLowSlider, eqMidSlider, eqHighSlider;
+    juce::Slider msBalanceSlider, gateThreshSlider, abMorphSlider;
+    juce::ToggleButton limiterButton, abSwitchButton;
 
     // Attachments
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> mixAtt, widthAtt;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> delayAtt, warpAtt;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> feedbackAtt, densityAtt;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> modRateAtt, modDepthAtt;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> dynFreqAtt, dynQAtt, dynGainAtt, dynDepthAtt, dynThreshAtt;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> duckingAtt;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> mixAtt, widthAtt, duckingAtt;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> preDelaySyncAtt;
 
-    // Labels
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> delayAtt, warpAtt, feedbackAtt, saturationAtt;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> densityAtt, modRateAtt, modDepthAtt, diffusionAtt;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> dynFreqAtt, dynQAtt, dynGainAtt, dynThreshAtt;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> eqLowAtt, eqMidAtt, eqHighAtt;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> msBalanceAtt, gateThreshAtt, abMorphAtt;
+
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> limiterAtt, abSwitchAtt;
+
     std::vector<std::unique_ptr<juce::Label>> labels;
 
-    // Layout
-    std::vector<juce::Rectangle<int>> columnRects;
-
-    // Mode Selector
+    // Mode
     juce::ComboBox modeComboBox;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> modeAtt;
     juce::Label modeLabel;
+    juce::Label syncLabel; // Explicit label for sync
 
-    // Clear Button
+    // Buttons
     juce::TextButton clearButton { "CLEAR" };
-
-    // Preset Buttons
     juce::TextButton savePresetButton { "SAVE" };
     juce::TextButton loadPresetButton { "LOAD" };
     std::unique_ptr<juce::FileChooser> fileChooser;
-
-    // Website Link
     juce::HyperlinkButton websiteLink;
-
     juce::TooltipWindow tooltipWindow;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VST3OpenValhallaAudioProcessorEditor)

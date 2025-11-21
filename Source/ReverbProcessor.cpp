@@ -1,27 +1,18 @@
 #include "ReverbProcessor.h"
-#include "PluginProcessor.h" // For Mode enum if needed, but we passed int
+#include <cmath>
+#include <juce_audio_basics/juce_audio_basics.h>
 
 ReverbProcessor::ReverbProcessor()
 {
-    // Initialize defaults
-    reverbParams.roomSize = 0.5f;
-    reverbParams.damping = 0.5f;
-    reverbParams.wetLevel = 0.33f;
-    reverbParams.dryLevel = 0.4f;
-    reverbParams.width = 1.0f;
-    reverbParams.freezeMode = 0.0f;
-
-    reverb.setParameters(reverbParams);
-
-    // Initialize Chorus for modulation
-    chorus.setRate(0.5f);
-    chorus.setDepth(0.5f);
-    chorus.setCentreDelay(10.0f);
-    chorus.setFeedback(0.0f);
-    chorus.setMix(1.0f); // We use chorus purely as a modulator block
-
-    dynamicEqFilter.setType(juce::dsp::StateVariableTPTFilterType::bandpass);
+    dynEqFilter.setType(juce::dsp::StateVariableTPTFilterType::bandpass);
     detectorFilter.setType(juce::dsp::StateVariableTPTFilterType::bandpass);
+
+    saturator.functionToUse = [](float x) {
+        return std::tanh(x);
+    };
+
+    limiter.setThreshold(0.0f);
+    limiter.setRelease(100.0f);
 }
 
 ReverbProcessor::~ReverbProcessor()
@@ -35,292 +26,17 @@ void ReverbProcessor::prepare(const juce::dsp::ProcessSpec& spec)
     reverb.prepare(spec);
     delayLine.prepare(spec);
     chorus.prepare(spec);
-    dynamicEqFilter.prepare(spec);
+
+    dynEqFilter.prepare(spec);
     detectorFilter.prepare(spec);
 
-    delayLine.setMaximumDelayInSamples(1.5 * sampleRate);
+    eq3Chain.prepare(spec);
 
-    // Pre-allocate wet buffer
+    limiter.prepare(spec);
+    saturator.prepare(spec);
+
+    delayLine.setMaximumDelayInSamples(2.0 * sampleRate);
     wetBuffer.setSize(spec.numChannels, spec.maximumBlockSize);
-}
-
-void ReverbProcessor::process(juce::dsp::ProcessContextReplacing<float>& context)
-{
-    // Apply parameters and mode logic first
-
-    // Base values from knobs
-    float roomSize = currentFeedback / 100.0f; // 0 to 1
-    float damping = 1.0f - (currentDensity / 100.0f);
-
-    float baseRoomSize = roomSize;
-    float baseDamping = damping;
-    float baseWidth = currentWidth / 100.0f;
-
-    float appliedDelayMs = currentDelay;
-    float appliedChorusRate = currentModRate;
-    float appliedChorusDepth = currentModDepth / 100.0f;
-    float appliedChorusFeedback = (currentWarp / 100.0f) * 0.8f - 0.4f;
-    float appliedChorusMix = 0.5f;
-
-    reverbParams.wetLevel = 1.0f;
-    reverbParams.dryLevel = 0.0f;
-
-    // Mode Implementation Logic
-    switch (currentMode) {
-        case 0: // Twin Star (Gemini): Fast attack, short decay
-             reverbParams.roomSize = baseRoomSize * 0.7f;
-             reverbParams.damping = baseDamping * 0.5f;
-             break;
-
-        case 1: // Sea Serpent (Hydra): Fast-ish attack
-             reverbParams.roomSize = baseRoomSize * 0.8f;
-             appliedChorusDepth = 0.8f; // More modulation
-             break;
-
-        case 2: // Horse Man (Centaurus): Medium attack
-             reverbParams.roomSize = baseRoomSize;
-             break;
-
-        case 3: // Archer (Sagittarius): Slow attack
-             reverbParams.roomSize = baseRoomSize;
-             reverbParams.damping = baseDamping * 1.2f;
-             break;
-
-        case 4: // Void Maker (Great Annihilator): Very long decay
-             reverbParams.roomSize = 0.95f + (baseRoomSize * 0.04f);
-             reverbParams.damping = 0.1f;
-             break;
-
-        case 5: // Galaxy Spiral (Andromeda)
-             reverbParams.roomSize = 0.98f;
-             appliedChorusRate = 0.2f; // Slow modulation
-             break;
-
-        case 6: // Harp String (Lyra)
-             reverbParams.roomSize = baseRoomSize * 0.6f;
-             reverbParams.damping = baseDamping * 0.6f;
-             break;
-
-        case 7: // Goat Horn (Capricorn)
-             reverbParams.roomSize = baseRoomSize * 0.75f;
-             baseWidth = baseWidth * 0.8f;
-             break;
-
-        case 8: // Nebula Cloud (LMC)
-             reverbParams.roomSize = 0.9f;
-             appliedDelayMs = currentDelay * 1.5f;
-             break;
-
-        case 9: // Triangle (Triangulum)
-             reverbParams.roomSize = 0.92f;
-             appliedDelayMs = currentDelay * 2.0f;
-             break;
-
-        case 10: // Cloud Major
-             reverbParams.roomSize = baseRoomSize * 0.8f;
-             reverbParams.damping = 0.2f;
-             appliedChorusFeedback = 0.7f;
-             break;
-
-        case 11: // Cloud Minor
-             reverbParams.roomSize = baseRoomSize * 0.6f;
-             reverbParams.damping = 0.2f;
-             appliedChorusFeedback = 0.6f;
-             break;
-
-        case 12: // Queen Chair (Cassiopeia)
-             reverbParams.roomSize = 0.95f;
-             reverbParams.damping = 0.8f;
-             break;
-
-        case 13: // Hunter Belt (Orion)
-             reverbParams.roomSize = 0.99f;
-             appliedChorusDepth = 0.9f;
-             break;
-
-        case 14: // Water Bearer (Aquarius): EchoVerb
-             reverbParams.roomSize = baseRoomSize * 0.4f;
-             reverbParams.wetLevel = 0.5f;
-             break;
-
-        case 15: // Two Fish (Pisces)
-             reverbParams.roomSize = baseRoomSize * 0.6f;
-             reverbParams.wetLevel = 0.6f;
-             break;
-
-        case 16: // Scorpion Tail (Scorpio)
-             reverbParams.roomSize = baseRoomSize * 0.7f;
-             break;
-
-        case 17: // Balance Scale (Libra)
-             reverbParams.roomSize = 0.9f;
-             appliedChorusRate = currentModRate * 1.5f;
-             appliedChorusDepth = 0.7f;
-             break;
-
-        case 18: // Lion Heart (Leo)
-             reverbParams.roomSize = 0.99f;
-             reverbParams.damping = 0.05f;
-             break;
-
-        case 19: // Maiden (Virgo)
-             reverbParams.roomSize = baseRoomSize * 0.5f;
-             appliedDelayMs = currentDelay * 0.8f;
-             break;
-
-        case 20: // Seven Sisters (Pleiades)
-             reverbParams.roomSize = baseRoomSize * 0.8f;
-             baseWidth = 1.0f;
-             reverbParams.damping = 0.5f;
-             appliedChorusMix = 0.2f;
-             break;
-
-        default:
-             reverbParams.roomSize = baseRoomSize;
-             reverbParams.damping = baseDamping;
-             break;
-    }
-
-    reverbParams.width = baseWidth;
-
-    // Apply to Modules
-    delayLine.setDelay(appliedDelayMs * sampleRate / 1000.0f);
-
-    chorus.setRate(appliedChorusRate);
-    chorus.setDepth(appliedChorusDepth);
-    chorus.setFeedback(appliedChorusFeedback);
-    chorus.setMix(appliedChorusMix);
-
-    reverb.setParameters(reverbParams);
-
-    // PROCESS AUDIO
-
-    // Get Audio Block
-    auto& inputBlock = context.getInputBlock();
-    auto& outputBlock = context.getOutputBlock();
-
-    // Copy input to wet buffer
-    for(size_t i=0; i<inputBlock.getNumChannels(); ++i)
-    {
-         wetBuffer.copyFrom(i, 0, inputBlock.getChannelPointer(i), (int)inputBlock.getNumSamples());
-    }
-
-    // Create a sub-block for the current process size
-    juce::dsp::AudioBlock<float> wetBlock(wetBuffer.getArrayOfWritePointers(), inputBlock.getNumChannels(), inputBlock.getNumSamples());
-    juce::dsp::ProcessContextReplacing<float> wetContext(wetBlock);
-
-    // 1. Delay
-    delayLine.process(wetContext);
-
-    // 2. Modulation (Chorus)
-    chorus.process(wetContext);
-
-    // 3. Reverb
-    reverb.process(wetContext);
-
-    // Dynamic EQ
-    dynamicEqFilter.setCutoffFrequency(currentDynFreq);
-    dynamicEqFilter.setResonance(currentDynQ);
-    detectorFilter.setCutoffFrequency(currentDynFreq);
-    detectorFilter.setResonance(currentDynQ);
-
-    // Manual process for Dynamic EQ
-    size_t nSamples = wetBlock.getNumSamples();
-    size_t nChannels = wetBlock.getNumChannels();
-
-    float att = 1.0f - std::exp(-1.0f / (0.005f * sampleRate));
-    float rel = 1.0f - std::exp(-1.0f / (0.1f * sampleRate));
-    float threshLinear = std::pow(10.0f, currentDynThresh / 20.0f);
-
-    for (size_t s = 0; s < nSamples; ++s)
-    {
-        float detectorIn = 0.0f;
-        for (size_t ch = 0; ch < nChannels; ++ch)
-            detectorIn += wetBlock.getChannelPointer(ch)[s];
-        detectorIn /= (float)nChannels;
-
-        float filteredDet = detectorFilter.processSample(0, detectorIn);
-        float envIn = std::abs(filteredDet);
-
-        if (envIn > dynEqEnvelope) dynEqEnvelope += (envIn - dynEqEnvelope) * att;
-        else dynEqEnvelope += (envIn - dynEqEnvelope) * rel;
-
-        float dynGain = 0.0f;
-        if (dynEqEnvelope > threshLinear)
-        {
-            float envDb = juce::Decibels::gainToDecibels(dynEqEnvelope + 0.00001f);
-            float excessDb = envDb - currentDynThresh;
-            if (excessDb > 0.0f)
-                 dynGain = currentDynDepth * std::min(1.0f, excessDb / 20.0f);
-        }
-
-        float totalGainDb = currentDynGain + dynGain;
-        float totalGainLin = juce::Decibels::decibelsToGain(totalGainDb);
-
-        // Peak EQ Approximation: Out = In + (Gain - 1) * Bandpass
-        for (size_t ch = 0; ch < nChannels; ++ch)
-        {
-            float inSample = wetBlock.getChannelPointer(ch)[s];
-            float bpSample = dynamicEqFilter.processSample((int)ch, inSample);
-            wetBlock.getChannelPointer(ch)[s] = inSample + (totalGainLin - 1.0f) * bpSample;
-        }
-    }
-
-    // Ducking
-    if (currentDucking > 0.0f)
-    {
-        float attackCoeff = 1.0f - std::exp(-1.0f / (0.01f * sampleRate));
-        float releaseCoeff = 1.0f - std::exp(-1.0f / (0.1f * sampleRate));
-        float duckIntensity = currentDucking / 100.0f;
-
-        // Iterate samples for envelope follower
-        auto numSamples = wetBlock.getNumSamples();
-        auto numChannels = wetBlock.getNumChannels();
-
-        // Assuming stereo or mono
-        const float* inputL = inputBlock.getChannelPointer(0);
-        const float* inputR = (inputBlock.getNumChannels() > 1) ? inputBlock.getChannelPointer(1) : nullptr;
-
-        for (size_t s = 0; s < numSamples; ++s)
-        {
-            float inMag = std::abs(inputL[s]);
-            if (inputR) inMag = std::max(inMag, std::abs(inputR[s]));
-
-            if (inMag > envelope)
-                envelope += (inMag - envelope) * attackCoeff;
-            else
-                envelope += (inMag - envelope) * releaseCoeff;
-
-            // Calculate reduction
-            float reduction = std::max(0.0f, 1.0f - (envelope * duckIntensity * 2.5f));
-
-            for (size_t ch = 0; ch < numChannels; ++ch)
-            {
-                wetBlock.getChannelPointer(ch)[s] *= reduction;
-            }
-        }
-    }
-
-    // 5. Mix
-    // dry is inputBlock
-    // wet is wetBlock
-
-    float wetAmount = currentMix / 100.0f;
-    float dryAmount = 1.0f - wetAmount;
-
-    // Sum
-    outputBlock.multiplyBy(dryAmount);
-    // Add wet
-    // There is no simple add for blocks, iterate channels
-    for (size_t ch = 0; ch < outputBlock.getNumChannels(); ++ch)
-    {
-        outputBlock.getChannelPointer(ch);
-        juce::FloatVectorOperations::addWithMultiply(
-            outputBlock.getChannelPointer(ch),
-            wetBlock.getChannelPointer(ch),
-            wetAmount,
-            outputBlock.getNumSamples());
-    }
 }
 
 void ReverbProcessor::reset()
@@ -328,33 +44,202 @@ void ReverbProcessor::reset()
     reverb.reset();
     delayLine.reset();
     chorus.reset();
-    dynamicEqFilter.reset();
+    dynEqFilter.reset();
     detectorFilter.reset();
+    eq3Chain.reset();
+    limiter.reset();
+    saturator.reset();
+
+    gateEnv = 0.0f;
+    duckEnv = 0.0f;
+    dynEqEnv = 0.0f;
 }
 
-void ReverbProcessor::setParameters(float mix, float width, float delay, float warp,
-                                    float feedback, float density, float modRate,
-                                    float modDepth, float dynFreq, float dynQ, float dynGain, float dynDepth, float dynThresh, float ducking, int mode)
+void ReverbProcessor::setParameters(const ReverbParameters& params)
 {
-    currentMix = mix;
-    currentWidth = width;
-    currentDelay = delay;
-    currentWarp = warp;
-    currentFeedback = feedback;
-    currentDensity = density;
-    currentModRate = modRate;
-    currentModDepth = modDepth;
-    currentDynFreq = dynFreq;
-    currentDynQ = dynQ;
-    currentDynGain = dynGain;
-    currentDynDepth = dynDepth;
-    currentDynThresh = dynThresh;
-    currentDucking = ducking;
-    currentMode = mode;
+    currentParams = params;
 }
 
-void ReverbProcessor::updateInternalParameters()
+void ReverbProcessor::process(juce::dsp::ProcessContextReplacing<float>& context)
 {
-    // Logic moved to process or setParameters to avoid atomic issues,
-    // but ideally should be here.
+    // 1. Update DSP Parameters
+
+    juce::dsp::Reverb::Parameters rParams;
+    rParams.roomSize = currentParams.feedback / 100.0f;
+    rParams.damping = 1.0f - (currentParams.density / 100.0f);
+    rParams.width = currentParams.width / 100.0f;
+    rParams.wetLevel = 1.0f;
+    rParams.dryLevel = 0.0f;
+    rParams.freezeMode = 0.0f;
+
+    float baseSize = rParams.roomSize;
+
+    switch (currentParams.mode) {
+        case 0: rParams.roomSize *= 0.7f; break; // TwinStar
+        case 4: rParams.roomSize = 0.95f + (baseSize * 0.04f); rParams.damping = 0.1f; break; // VoidMaker
+        default: break;
+    }
+
+    reverb.setParameters(rParams);
+
+    // Pre-Delay
+    float delayMs = currentParams.delay;
+    if (currentParams.preDelaySync > 0 && currentParams.bpm > 0)
+    {
+        float beatMs = 60000.0f / (float)currentParams.bpm;
+        if (currentParams.preDelaySync == 1) delayMs = beatMs; // 1/4
+        else if (currentParams.preDelaySync == 2) delayMs = beatMs * 0.5f; // 1/8
+        else if (currentParams.preDelaySync == 3) delayMs = beatMs * 0.25f; // 1/16
+    }
+    delayLine.setDelay(delayMs * sampleRate / 1000.0f);
+
+    // Warp
+    chorus.setRate(currentParams.modRate);
+    chorus.setDepth(currentParams.modDepth / 100.0f);
+    chorus.setFeedback((currentParams.warp / 100.0f) * 0.5f);
+    chorus.setMix(0.5f);
+
+    // Dynamic EQ
+    dynEqFilter.setCutoffFrequency(currentParams.dynFreq);
+    dynEqFilter.setResonance(currentParams.dynQ);
+    detectorFilter.setCutoffFrequency(currentParams.dynFreq);
+    detectorFilter.setResonance(currentParams.dynQ);
+
+    // 3-Band EQ
+    auto& lowShelf = eq3Chain.get<0>();
+    lowShelf.coefficients = juce::dsp::IIR::Coefficients<float>::makeLowShelf(sampleRate, 200.0f, 0.71f, juce::Decibels::decibelsToGain(currentParams.eq3Low));
+
+    auto& midPeak = eq3Chain.get<1>();
+    midPeak.coefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(sampleRate, 1000.0f, 1.0f, juce::Decibels::decibelsToGain(currentParams.eq3Mid));
+
+    auto& highShelf = eq3Chain.get<2>();
+    highShelf.coefficients = juce::dsp::IIR::Coefficients<float>::makeHighShelf(sampleRate, 6000.0f, 0.71f, juce::Decibels::decibelsToGain(currentParams.eq3High));
+
+    // Limiter
+    limiter.setThreshold(currentParams.limiterOn ? -0.1f : 10.0f);
+
+    // 2. Process Audio
+    auto& inputBlock = context.getInputBlock();
+    auto& outputBlock = context.getOutputBlock();
+
+    wetBuffer.copyFrom(0, 0, inputBlock.getChannelPointer(0), (int)inputBlock.getNumSamples());
+    if (inputBlock.getNumChannels() > 1)
+        wetBuffer.copyFrom(1, 0, inputBlock.getChannelPointer(1), (int)inputBlock.getNumSamples());
+
+    juce::dsp::AudioBlock<float> wetBlock(wetBuffer);
+    juce::dsp::ProcessContextReplacing<float> wetContext(wetBlock);
+
+    // 2.1 Saturation (Pre)
+    float drive = 1.0f + (currentParams.saturation / 20.0f);
+    wetBlock.multiplyBy(drive);
+    saturator.process(wetContext);
+    wetBlock.multiplyBy(1.0f / drive);
+
+    // 2.2 Pre-Delay
+    delayLine.process(wetContext);
+
+    // 2.3 Warp
+    chorus.process(wetContext);
+
+    // 2.4 Reverb
+    reverb.process(wetContext);
+
+    // 2.5 Gate, DynEQ, Ducking Loop
+    size_t nSamples = wetBlock.getNumSamples();
+    size_t nChannels = wetBlock.getNumChannels();
+
+    float gateThreshLin = juce::Decibels::decibelsToGain(currentParams.gateThresh);
+    float dynThreshLin = std::pow(10.0f, currentParams.dynThresh / 20.0f);
+
+    // Coefficients
+    float gateRel = 1.0f - std::exp(-1.0f / (0.1f * sampleRate));
+    float dynAtt = 1.0f - std::exp(-1.0f / (0.005f * sampleRate));
+    float dynRel = 1.0f - std::exp(-1.0f / (0.1f * sampleRate));
+    float duckAtt = 1.0f - std::exp(-1.0f / (0.01f * sampleRate));
+    float duckRel = 1.0f - std::exp(-1.0f / (0.1f * sampleRate));
+
+    float duckIntensity = currentParams.ducking / 100.0f;
+
+    for (size_t s = 0; s < nSamples; ++s)
+    {
+        // Gate Level
+        float maxLevel = 0.0f;
+        for (size_t ch=0; ch<nChannels; ++ch) maxLevel = std::max(maxLevel, std::abs(wetBlock.getChannelPointer(ch)[s]));
+
+        if (maxLevel > gateThreshLin) gateEnv = 1.0f;
+        else gateEnv += (0.0f - gateEnv) * gateRel;
+
+        // DynEQ Detector
+        float detOut = detectorFilter.processSample(0, maxLevel);
+        float envIn = std::abs(detOut);
+        if (envIn > dynEqEnv) dynEqEnv += (envIn - dynEqEnv) * dynAtt;
+        else dynEqEnv += (envIn - dynEqEnv) * dynRel;
+
+        float dynGain = 0.0f;
+        if (dynEqEnv > dynThreshLin)
+        {
+             float excessDb = juce::Decibels::gainToDecibels(dynEqEnv + 0.00001f) - currentParams.dynThresh;
+             if (excessDb > 0.0f) dynGain = currentParams.dynDepth * std::min(1.0f, excessDb/20.0f);
+        }
+        float totalDynGain = juce::Decibels::decibelsToGain(currentParams.dynGain + dynGain);
+
+        // Ducking Envelope (Dry Input)
+        float dryL = std::abs(inputBlock.getChannelPointer(0)[s]);
+        if (dryL > duckEnv) duckEnv += (dryL - duckEnv) * duckAtt;
+        else duckEnv += (dryL - duckEnv) * duckRel;
+
+        float duckGain = std::max(0.0f, 1.0f - (duckEnv * duckIntensity * 4.0f));
+
+        // Apply Processes per channel
+        for (size_t ch=0; ch<nChannels; ++ch)
+        {
+            float samp = wetBlock.getChannelPointer(ch)[s];
+
+            // Gate
+            samp *= gateEnv;
+
+            // DynEQ (Peak Approx)
+            float bp = dynEqFilter.processSample((int)ch, samp);
+            samp = samp + (totalDynGain - 1.0f) * bp;
+
+            // Ducking
+            samp *= duckGain;
+
+            wetBlock.getChannelPointer(ch)[s] = samp;
+        }
+    }
+
+    // 2.6 3-Band EQ
+    eq3Chain.process(wetContext);
+
+    // 2.7 M/S Balance
+    if (nChannels == 2)
+    {
+        float balance = currentParams.msBalance / 100.0f;
+        for (size_t s=0; s<nSamples; ++s)
+        {
+            float l = wetBlock.getChannelPointer(0)[s];
+            float r = wetBlock.getChannelPointer(1)[s];
+            float m = (l + r) * 0.5f;
+            float side = (l - r) * 0.5f;
+
+            float mGain = (balance < 0.5f) ? 1.0f : 2.0f * (1.0f - balance);
+            float sGain = (balance > 0.5f) ? 1.0f : balance * 2.0f;
+
+            wetBlock.getChannelPointer(0)[s] = m * mGain + side * sGain;
+            wetBlock.getChannelPointer(1)[s] = m * mGain - side * sGain;
+        }
+    }
+
+    // 2.9 Mix
+    float wetAmt = currentParams.mix / 100.0f;
+    float dryAmt = 1.0f - wetAmt;
+
+    outputBlock.multiplyBy(dryAmt);
+    for (size_t ch=0; ch<nChannels; ++ch)
+        juce::FloatVectorOperations::addWithMultiply(outputBlock.getChannelPointer(ch), wetBlock.getChannelPointer(ch), wetAmt, nSamples);
+
+    // 2.10 Limiter
+    if (currentParams.limiterOn)
+        limiter.process(context);
 }
