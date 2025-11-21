@@ -89,6 +89,12 @@ public:
     {
         return juce::Font("Verdana", 12.0f, juce::Font::bold);
     }
+
+    juce::BorderSize<int> getLabelBorderSize (juce::Label& label) override
+    {
+        // Minimal border to bring label text very close to value text
+        return juce::BorderSize<int>(0, 0, 0, 0);
+    }
 };
 
 class VST3OpenValhallaAudioProcessorEditor  : public juce::AudioProcessorEditor

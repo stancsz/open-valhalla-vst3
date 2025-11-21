@@ -2,3 +2,5 @@ build/
 JuceLibraryCode/
 *.jucer
 *.user
+TestOutput/
+.agent

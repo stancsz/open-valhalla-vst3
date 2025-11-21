@@ -36,8 +36,10 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
     addSlider(eqHighSlider, eqHighAtt, "EQ3_HIGH", "HIGH");
 
     // Utility Group
-    addComboBox(preDelaySyncBox, preDelaySyncAtt, "PREDELAY_SYNC", "SYNC");
+    // Utility Group
     preDelaySyncBox.addItemList({"Free", "1/4", "1/8", "1/16"}, 1);
+    preDelaySyncBox.setTextWhenNothingSelected("Default");
+    addComboBox(preDelaySyncBox, preDelaySyncAtt, "PREDELAY_SYNC", "SYNC");
 
     addAndMakeVisible(abSwitchButton);
     abSwitchButton.setButtonText("A/B");
@@ -51,8 +53,9 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
     abSwitchButton.setButtonText(audioProcessor.isStateA ? "A" : "B"); // Initialize text
 
     addAndMakeVisible(modeComboBox);
-    modeAtt = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(audioProcessor.getAPVTS(), "MODE", modeComboBox);
     modeComboBox.addItemList(audioProcessor.getAPVTS().getParameter("MODE")->getAllValueStrings(), 1);
+    modeComboBox.setTextWhenNothingSelected("Default");
+    modeAtt = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(audioProcessor.getAPVTS(), "MODE", modeComboBox);
     modeComboBox.setJustificationType(juce::Justification::centred);
 
     modeLabel.setText("MODE", juce::dontSendNotification);
@@ -78,8 +81,8 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
     };
 
     addAndMakeVisible(websiteLink);
-    websiteLink.setButtonText("ov.stanchen.ca");
-    websiteLink.setURL(juce::URL("https://ov.stanchen.ca"));
+    websiteLink.setButtonText("stanchen.ca");
+    websiteLink.setURL(juce::URL("https://stanchen.ca"));
 
     modeComboBox.onChange = [this]() { audioProcessor.setParametersForMode(modeComboBox.getSelectedId() - 1); };
 
@@ -91,7 +94,8 @@ VST3OpenValhallaAudioProcessorEditor::~VST3OpenValhallaAudioProcessorEditor() { 
 void VST3OpenValhallaAudioProcessorEditor::addSlider(juce::Slider& slider, std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>& attachment, const juce::String& paramID, const juce::String& name)
 {
     slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    slider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    // Reduced text box height to bring value closer to knob
+    slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 12);
     slider.setPopupDisplayEnabled(true, false, this);
     slider.setTooltip(name);
     addAndMakeVisible(slider);
@@ -101,6 +105,7 @@ void VST3OpenValhallaAudioProcessorEditor::addSlider(juce::Slider& slider, std::
     label->setJustificationType(juce::Justification::centred);
     label->setColour(juce::Label::textColourId, juce::Colours::white);
     label->setFont(juce::Font(11.0f, juce::Font::bold));
+    // Attach label below slider with minimal offset
     label->attachToComponent(&slider, false);
     addAndMakeVisible(*label);
     labels.push_back(std::move(label));
@@ -185,35 +190,42 @@ void VST3OpenValhallaAudioProcessorEditor::resized()
     // 1. MIX / LEVEL
     {
         auto r = getGroup(0);
-        // Large Mix Knob (40% height)
-        auto top = r.removeFromTop(r.getHeight() * 0.4f);
+        // Large Mix Knob (32% height) - reduced to give more space below
+        auto top = r.removeFromTop(r.getHeight() * 0.32f);
         mixSlider.setBounds(top.reduced(10));
 
-        // M/S Width, Ducking, Limiter in remaining space
+        // M/S Width, Ducking, Limiter in remaining space with minimal vertical padding
         int h = r.getHeight() / 3;
-        msBalanceSlider.setBounds(r.removeFromTop(h).reduced(15, 5));
-        duckingSlider.setBounds(r.removeFromTop(h).reduced(15, 5));
-        limiterButton.setBounds(r.removeFromTop(h).reduced(15, 5));
+        msBalanceSlider.setBounds(r.removeFromTop(h).reduced(15, 4));
+        duckingSlider.setBounds(r.removeFromTop(h).reduced(15, 4));
+        
+        // Center the limiter button
+        auto limiterRow = r.removeFromTop(h);
+        int buttonWidth = 80;
+        limiterButton.setBounds(limiterRow.getCentreX() - buttonWidth / 2, 
+                                limiterRow.getY() + 4, 
+                                buttonWidth, 
+                                limiterRow.getHeight() - 8);
     }
 
     // 2. TIME / SIZE
     {
         auto r = getGroup(1);
-        // Large Delay Knob (40% height)
-        auto top = r.removeFromTop(r.getHeight() * 0.4f);
+        // Large Delay Knob (32% height) - reduced to give more space below
+        auto top = r.removeFromTop(r.getHeight() * 0.32f);
         delaySlider.setBounds(top.reduced(10));
 
         int h = r.getHeight() / 3;
-        feedbackSlider.setBounds(r.removeFromTop(h).reduced(15, 5));
-        densitySlider.setBounds(r.removeFromTop(h).reduced(15, 5));
-        diffusionSlider.setBounds(r.removeFromTop(h).reduced(15, 5));
+        feedbackSlider.setBounds(r.removeFromTop(h).reduced(15, 4));
+        densitySlider.setBounds(r.removeFromTop(h).reduced(15, 4));
+        diffusionSlider.setBounds(r.removeFromTop(h).reduced(15, 4));
     }
 
     // 3. MODULATION
     {
         auto r = getGroup(2);
-        // Large Width Knob (40% height) - Highlighting "Width" as requested
-        auto top = r.removeFromTop(r.getHeight() * 0.4f);
+        // Large Width Knob (32% height) - reduced to give more space below
+        auto top = r.removeFromTop(r.getHeight() * 0.32f);
         widthSlider.setBounds(top.reduced(10));
 
         // Grid for others (Warp, Rate, Depth, Sat, Gate)
@@ -226,39 +238,57 @@ void VST3OpenValhallaAudioProcessorEditor::resized()
         int colW = r.getWidth() / 2;
 
         auto row1 = r.removeFromTop(rowH);
-        warpSlider.setBounds(row1.removeFromLeft(colW).reduced(5));
-        modRateSlider.setBounds(row1.reduced(5));
+        warpSlider.setBounds(row1.removeFromLeft(colW).reduced(5, 4));
+        modRateSlider.setBounds(row1.reduced(5, 4));
 
         auto row2 = r.removeFromTop(rowH);
-        modDepthSlider.setBounds(row2.removeFromLeft(colW).reduced(5));
-        saturationSlider.setBounds(row2.reduced(5));
+        modDepthSlider.setBounds(row2.removeFromLeft(colW).reduced(5, 4));
+        saturationSlider.setBounds(row2.reduced(5, 4));
 
         auto row3 = r.removeFromTop(rowH);
-        gateThreshSlider.setBounds(row3.removeFromLeft(colW).reduced(5));
+        gateThreshSlider.setBounds(row3.removeFromLeft(colW).reduced(5, 4));
         // Empty slot next to gate
     }
 
     // 4. FILTERS / EQ
     {
         auto r = getGroup(3);
+        int rowHeight = r.getHeight() / 3;
+        
+        // Helper to center slider vertically but keep it tight to pull label down
+        auto placeTight = [&](juce::Slider& s, juce::Rectangle<int> zone) {
+            int maxS = juce::jmin(zone.getWidth(), zone.getHeight());
+            // Reduce knob size to avoid overlap
+            int knobSize = (int)(maxS * 0.75f); 
+            int sliderH = knobSize + 20; // Knob + Text + Padding
+            
+            // Center vertically
+            s.setBounds(zone.getCentreX() - knobSize / 2, 
+                        zone.getCentreY() - sliderH / 2 + 10, 
+                        knobSize, 
+                        sliderH);
+        };
 
-        // DynEQ Grid (Top 60%)
-        auto dynArea = r.removeFromTop(r.getHeight() * 0.6f);
-        int dynH = dynArea.getHeight() / 2;
-        int dynW = dynArea.getWidth() / 2;
+        // Row 1: Dyn Freq, Dyn Q
+        auto row1 = r.removeFromTop(rowHeight);
+        int halfW = row1.getWidth() / 2;
+        
+        placeTight(dynFreqSlider, row1.removeFromLeft(halfW).reduced(2));
+        placeTight(dynQSlider, row1.reduced(2));
 
-        dynFreqSlider.setBounds(dynArea.getX(), dynArea.getY(), dynW, dynH);
-        dynQSlider.setBounds(dynArea.getX() + dynW, dynArea.getY(), dynW, dynH);
-        dynGainSlider.setBounds(dynArea.getX(), dynArea.getY() + dynH, dynW, dynH);
-        dynThreshSlider.setBounds(dynArea.getX() + dynW, dynArea.getY() + dynH, dynW, dynH);
+        // Row 2: Dyn Gain, Dyn Thr
+        auto row2 = r.removeFromTop(rowHeight);
+        
+        placeTight(dynGainSlider, row2.removeFromLeft(halfW).reduced(2));
+        placeTight(dynThreshSlider, row2.reduced(2));
 
-        // 3-Band EQ Row (Bottom 40%)
-        int eqW = r.getWidth() / 3;
-        int eqH = r.getHeight();
-
-        eqLowSlider.setBounds(r.getX(), r.getY(), eqW, eqH);
-        eqMidSlider.setBounds(r.getX() + eqW, r.getY(), eqW, eqH);
-        eqHighSlider.setBounds(r.getX() + 2*eqW, r.getY(), eqW, eqH);
+        // Row 3: 3-Band EQ
+        auto row3 = r;
+        int thirdW = row3.getWidth() / 3;
+        
+        placeTight(eqLowSlider, row3.removeFromLeft(thirdW).reduced(2));
+        placeTight(eqMidSlider, row3.removeFromLeft(thirdW).reduced(2));
+        placeTight(eqHighSlider, row3.reduced(2));
     }
 
     // 5. UTILITY
