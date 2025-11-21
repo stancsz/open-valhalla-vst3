@@ -1,11 +1,12 @@
-name: CMake Build
+name: CMake Build and Release
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Tag for the release (e.g. v1.0.0)'
+        required: true
+        type: string
 
 jobs:
   build-windows:
@@ -54,3 +55,35 @@ jobs:
         path: |
           build/VST3OpenValhalla_artefacts/VST3/
           build/VST3OpenValhalla_artefacts/Standalone/
+
+  release:
+    name: Create Release
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Download Windows Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: OpenValhalla-Windows
+        path: OpenValhalla-Windows
+
+    - name: Download Linux Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: OpenValhalla-Linux
+        path: OpenValhalla-Linux
+
+    - name: Zip Artifacts
+      run: |
+        zip -r OpenValhalla-Windows.zip OpenValhalla-Windows
+        zip -r OpenValhalla-Linux.zip OpenValhalla-Linux
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.event.inputs.release_tag }}
+        files: |
+          OpenValhalla-Windows.zip
+          OpenValhalla-Linux.zip
