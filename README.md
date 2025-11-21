@@ -1,6 +1,8 @@
 # Open Valhalla (VST3) — Quickstart
 
-[![Download v0.1.0](https://img.shields.io/badge/Download-v0.1.0-brightgreen?style=for-the-badge)](https://github.com/stancsz/open-valhalla-vst3/releases/tag/v0.1.0)
+[![Download v0.1.0](https://img.shields.io/badge/Download-v0.1.0-brightgreen?style=for-the-badge)](https://github.com/stancsz/VST3-Open-Valhalla/releases/tag/v0.1.0)
+
+![Plugin screenshot](docs/screenshot.png)
 
 Open Valhalla is a VST3 reverb plugin. The badge above links to the v0.1.0 release where prebuilt binaries are available.
 
