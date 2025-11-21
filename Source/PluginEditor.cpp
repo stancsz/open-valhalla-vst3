@@ -39,6 +39,53 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
     clearButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     clearButton.onClick = [this]() { audioProcessor.clearTriggered = true; };
 
+    // Preset Buttons
+    addAndMakeVisible(savePresetButton);
+    savePresetButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF2A2A2A));
+    savePresetButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    savePresetButton.onClick = [this]()
+    {
+        fileChooser = std::make_unique<juce::FileChooser>("Save Preset",
+            juce::File::getSpecialLocation(juce::File::userHomeDirectory),
+            "*.json");
+
+        auto folderChooserFlags = juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles;
+
+        fileChooser->launchAsync(folderChooserFlags, [this](const juce::FileChooser& chooser)
+        {
+            auto file = chooser.getResult();
+            if (file != juce::File{})
+            {
+                // Ensure .json extension
+                if (!file.hasFileExtension("json"))
+                    file = file.withFileExtension("json");
+
+                audioProcessor.savePreset(file);
+            }
+        });
+    };
+
+    addAndMakeVisible(loadPresetButton);
+    loadPresetButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF2A2A2A));
+    loadPresetButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    loadPresetButton.onClick = [this]()
+    {
+        fileChooser = std::make_unique<juce::FileChooser>("Load Preset",
+            juce::File::getSpecialLocation(juce::File::userHomeDirectory),
+            "*.json");
+
+        auto folderChooserFlags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles;
+
+        fileChooser->launchAsync(folderChooserFlags, [this](const juce::FileChooser& chooser)
+        {
+            auto file = chooser.getResult();
+            if (file != juce::File{})
+            {
+                audioProcessor.loadPreset(file);
+            }
+        });
+    };
+
     setSize (850, 450);
 }
 
@@ -110,7 +157,11 @@ void VST3OpenValhallaAudioProcessorEditor::resized()
     modeLabel.setBounds(modeComboBox.getX() - 50, modeComboBox.getY(), 45, 30);
 
     // Clear Button
-    clearButton.setBounds(modeComboBox.getRight() + 20, modeComboBox.getY(), 60, 30);
+    clearButton.setBounds(modeComboBox.getRight() + 10, modeComboBox.getY(), 60, 30);
+
+    // Preset Buttons
+    savePresetButton.setBounds(clearButton.getRight() + 10, modeComboBox.getY(), 60, 30);
+    loadPresetButton.setBounds(savePresetButton.getRight() + 10, modeComboBox.getY(), 60, 30);
 
     // Main panels layout
     // 5 Columns: Mix | Delay | Feedback | Mod | EQ

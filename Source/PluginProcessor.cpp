@@ -281,6 +281,80 @@ void VST3OpenValhallaAudioProcessor::setStateInformation (const void* data, int 
             apvts.replaceState (juce::ValueTree::fromXml (*xmlState));
 }
 
+void VST3OpenValhallaAudioProcessor::savePreset(const juce::File& file)
+{
+    auto state = apvts.copyState();
+
+    // Convert ValueTree to JSON object manually to ensure simple format
+    juce::DynamicObject* jsonObject = new juce::DynamicObject();
+
+    // A robust way is to get all parameters from APVTS directly
+    juce::DynamicObject* paramsObject = new juce::DynamicObject();
+
+    auto& params = getParameters();
+    for (auto* param : params)
+    {
+        if (auto* p = dynamic_cast<juce::AudioProcessorParameterWithID*>(param))
+        {
+            paramsObject->setProperty(p->paramID, p->getValue()); // Normalized value 0..1
+            // OR we can save the denormalized value?
+            // Users usually want to see "Mix: 50.0", not "0.5".
+            // Let's save the raw denormalized value if possible.
+            // p->getValue() returns normalized.
+            // APVTS getRawParameterValue returns the actual float value.
+
+            // Save denormalized value
+            paramsObject->setProperty(p->paramID, apvts.getRawParameterValue(p->paramID)->load());
+        }
+    }
+
+    jsonObject->setProperty("parameters", paramsObject);
+    jsonObject->setProperty("pluginVersion", JucePlugin_VersionString);
+    jsonObject->setProperty("pluginName", JucePlugin_Name);
+
+    juce::var jsonVar(jsonObject);
+    juce::String jsonString = juce::JSON::toString(jsonVar);
+
+    file.replaceWithText(jsonString);
+}
+
+void VST3OpenValhallaAudioProcessor::loadPreset(const juce::File& file)
+{
+    if (!file.existsAsFile())
+        return;
+
+    juce::String jsonString = file.loadFileAsString();
+    juce::var jsonVar = juce::JSON::parse(jsonString);
+
+    if (juce::JSON::toString(jsonVar) == "null") // Failed parse
+        return;
+
+    if (jsonVar.hasProperty("parameters"))
+    {
+        auto* paramsObject = jsonVar.getProperty("parameters", juce::var()).getDynamicObject();
+        if (paramsObject)
+        {
+            auto& properties = paramsObject->getProperties();
+            for (auto& prop : properties)
+            {
+                 auto paramID = prop.name.toString();
+                 auto value = (float)prop.value;
+
+                 auto* param = apvts.getParameter(paramID);
+                 if (param)
+                 {
+                     // Use RangedAudioParameter to support all parameter types generically
+                     if (auto* rangedParam = dynamic_cast<juce::RangedAudioParameter*>(param))
+                     {
+                         float normalized = rangedParam->convertTo0to1(value);
+                         rangedParam->setValueNotifyingHost(normalized);
+                     }
+                 }
+            }
+        }
+    }
+}
+
 //==============================================================================
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

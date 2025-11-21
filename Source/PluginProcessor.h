@@ -47,6 +47,10 @@ public:
     //==============================================================================
     juce::AudioProcessorValueTreeState& getAPVTS() { return apvts; }
 
+    // Preset Management
+    void savePreset(const juce::File& file);
+    void loadPreset(const juce::File& file);
+
 private:
     juce::AudioProcessorValueTreeState apvts;
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
