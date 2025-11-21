@@ -31,7 +31,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout VST3OpenValhallaAudioProcess
 
     // Delay
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "DELAY", "Delay", juce::NormalisableRange<float>(0.0f, 2000.0f, 0.1f), 300.0f));
+        "DELAY", "Delay", juce::NormalisableRange<float>(0.0f, 1000.0f, 0.1f), 100.0f));
 
     // Warp
     layout.add(std::make_unique<juce::AudioParameterFloat>(
