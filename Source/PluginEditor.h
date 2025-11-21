@@ -18,6 +18,7 @@ public:
         setColour(juce::Label::textColourId, juce::Colour(0xFFCCCCCC)); // Light grey text
         setColour(juce::Slider::textBoxTextColourId, juce::Colour(0xFFFFFFFF));
         setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
+        setColour(juce::Slider::textBoxBackgroundColourId, juce::Colours::transparentBlack);
     }
 
     void drawRotarySlider (juce::Graphics& g, int x, int y, int width, int height, float sliderPos,
@@ -120,17 +121,22 @@ private:
     juce::Slider delaySlider, warpSlider;
     juce::Slider feedbackSlider, densitySlider;
     juce::Slider modRateSlider, modDepthSlider;
-    juce::Slider eqHighSlider, eqLowSlider;
+    juce::Slider dynFreqSlider, dynQSlider, dynGainSlider, dynDepthSlider, dynThreshSlider;
+    juce::Slider duckingSlider;
 
     // Attachments
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> mixAtt, widthAtt;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> delayAtt, warpAtt;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> feedbackAtt, densityAtt;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> modRateAtt, modDepthAtt;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> eqHighAtt, eqLowAtt;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> dynFreqAtt, dynQAtt, dynGainAtt, dynDepthAtt, dynThreshAtt;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> duckingAtt;
 
     // Labels
     std::vector<std::unique_ptr<juce::Label>> labels;
+
+    // Layout
+    std::vector<juce::Rectangle<int>> columnRects;
 
     // Mode Selector
     juce::ComboBox modeComboBox;
@@ -147,6 +153,8 @@ private:
 
     // Website Link
     juce::HyperlinkButton websiteLink;
+
+    juce::TooltipWindow tooltipWindow;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VST3OpenValhallaAudioProcessorEditor)
 };
