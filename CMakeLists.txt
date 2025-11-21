@@ -61,3 +61,46 @@ target_link_libraries(VST3OpenValhalla
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags
 )
+
+enable_testing()
+
+juce_add_gui_app(ScreenshotTest
+    PRODUCT_NAME "ScreenshotTest"
+)
+
+target_sources(ScreenshotTest
+    PRIVATE
+        Tests/ScreenshotTest.cpp
+        Source/PluginProcessor.cpp
+        Source/PluginProcessor.h
+        Source/PluginEditor.cpp
+        Source/PluginEditor.h
+        Source/ReverbProcessor.cpp
+        Source/ReverbProcessor.h
+)
+
+target_link_libraries(ScreenshotTest
+    PRIVATE
+        juce::juce_audio_utils
+        juce::juce_dsp
+        juce::juce_gui_basics
+        ${ALSA_LIBRARIES}
+    PUBLIC
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_lto_flags
+        juce::juce_recommended_warning_flags
+)
+
+target_compile_definitions(ScreenshotTest
+    PRIVATE
+        JucePlugin_Name="Open Valhalla"
+        JucePlugin_VersionString="0.0.3"
+        JucePlugin_WantsMidiInput=0
+        JucePlugin_ProducesMidiOutput=0
+        JucePlugin_IsMidiEffect=0
+        JucePlugin_IsSynth=0
+)
+
+target_compile_features(ScreenshotTest PRIVATE cxx_std_17)
+
+add_test(NAME GenerateScreenshot COMMAND ScreenshotTest)
