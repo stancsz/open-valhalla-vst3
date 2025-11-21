@@ -227,6 +227,41 @@ void ReverbProcessor::process(juce::dsp::ProcessContextReplacing<float>& context
     lowPassFilter.process(wetContext);
     highPassFilter.process(wetContext);
 
+    // Ducking
+    if (currentDucking > 0.0f)
+    {
+        float attackCoeff = 1.0f - std::exp(-1.0f / (0.01f * sampleRate));
+        float releaseCoeff = 1.0f - std::exp(-1.0f / (0.1f * sampleRate));
+        float duckIntensity = currentDucking / 100.0f;
+
+        // Iterate samples for envelope follower
+        auto numSamples = wetBlock.getNumSamples();
+        auto numChannels = wetBlock.getNumChannels();
+
+        // Assuming stereo or mono
+        const float* inputL = inputBlock.getChannelPointer(0);
+        const float* inputR = (inputBlock.getNumChannels() > 1) ? inputBlock.getChannelPointer(1) : nullptr;
+
+        for (size_t s = 0; s < numSamples; ++s)
+        {
+            float inMag = std::abs(inputL[s]);
+            if (inputR) inMag = std::max(inMag, std::abs(inputR[s]));
+
+            if (inMag > envelope)
+                envelope += (inMag - envelope) * attackCoeff;
+            else
+                envelope += (inMag - envelope) * releaseCoeff;
+
+            // Calculate reduction
+            float reduction = std::max(0.0f, 1.0f - (envelope * duckIntensity * 2.5f));
+
+            for (size_t ch = 0; ch < numChannels; ++ch)
+            {
+                wetBlock.getChannelPointer(ch)[s] *= reduction;
+            }
+        }
+    }
+
     // 5. Mix
     // dry is inputBlock
     // wet is wetBlock
@@ -260,7 +295,7 @@ void ReverbProcessor::reset()
 
 void ReverbProcessor::setParameters(float mix, float width, float delay, float warp,
                                     float feedback, float density, float modRate,
-                                    float modDepth, float eqHigh, float eqLow, int mode)
+                                    float modDepth, float eqHigh, float eqLow, float ducking, int mode)
 {
     currentMix = mix;
     currentWidth = width;
@@ -272,6 +307,7 @@ void ReverbProcessor::setParameters(float mix, float width, float delay, float w
     currentModDepth = modDepth;
     currentEqHigh = eqHigh;
     currentEqLow = eqLow;
+    currentDucking = ducking;
     currentMode = mode;
 }
 

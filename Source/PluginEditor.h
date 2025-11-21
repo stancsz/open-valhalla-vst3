@@ -121,10 +121,12 @@ private:
     juce::Slider feedbackSlider, densitySlider;
     juce::Slider modRateSlider, modDepthSlider;
     juce::Slider eqHighSlider, eqLowSlider;
+    juce::Slider duckingSlider;
 
     // Attachments
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> mixAtt, widthAtt;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> delayAtt, warpAtt;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> duckingAtt;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> feedbackAtt, densityAtt;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> modRateAtt, modDepthAtt;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> eqHighAtt, eqLowAtt;
@@ -147,6 +149,8 @@ private:
 
     // Website Link
     juce::HyperlinkButton websiteLink;
+
+    juce::TooltipWindow tooltipWindow;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VST3OpenValhallaAudioProcessorEditor)
 };

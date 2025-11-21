@@ -22,6 +22,8 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
     addSlider(eqHighSlider, eqHighAtt, "EQHIGH", "EQ HIGH");
     addSlider(eqLowSlider, eqLowAtt, "EQLOW", "EQ LOW");
 
+    addSlider(duckingSlider, duckingAtt, "DUCKING", "DUCKING");
+
     // Mode
     addAndMakeVisible(modeComboBox);
     modeAtt = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(audioProcessor.getAPVTS(), "MODE", modeComboBox);
@@ -32,9 +34,11 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
     modeLabel.setJustificationType(juce::Justification::centred);
     modeLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF888888));
     addAndMakeVisible(modeLabel);
+    modeComboBox.setTooltip("Selects the reverb algorithm.");
 
     // Clear Button
     addAndMakeVisible(clearButton);
+    clearButton.setTooltip("Resets reverb buffer and parameters.");
     clearButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF2A2A2A));
     clearButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     clearButton.onClick = [this]()
@@ -127,6 +131,19 @@ void VST3OpenValhallaAudioProcessorEditor::addSlider(juce::Slider& slider, std::
     slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     slider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0); // Clean look, no text box
     slider.setPopupDisplayEnabled(true, false, this); // Show value on drag
+
+    if (paramID == "MIX") slider.setTooltip("Controls the wet/dry balance.");
+    else if (paramID == "WIDTH") slider.setTooltip("Adjusts stereo width.");
+    else if (paramID == "DELAY") slider.setTooltip("Sets pre-delay time (ms).");
+    else if (paramID == "WARP") slider.setTooltip("Adds modulation character.");
+    else if (paramID == "FEEDBACK") slider.setTooltip("Controls decay time.");
+    else if (paramID == "DENSITY") slider.setTooltip("Adjusts diffusion density.");
+    else if (paramID == "MODRATE") slider.setTooltip("LFO speed.");
+    else if (paramID == "MODDEPTH") slider.setTooltip("LFO intensity.");
+    else if (paramID == "EQHIGH") slider.setTooltip("High-cut filter.");
+    else if (paramID == "EQLOW") slider.setTooltip("Low-cut filter.");
+    else if (paramID == "DUCKING") slider.setTooltip("Compresses reverb when input is loud.");
+
     addAndMakeVisible(slider);
 
     auto label = std::make_unique<juce::Label>();
@@ -198,7 +215,7 @@ void VST3OpenValhallaAudioProcessorEditor::resized()
     // 5 Columns: Mix | Delay | Feedback | Mod | EQ
 
     int margin = 10;
-    int cols = 5;
+    int cols = 6;
     int colWidth = (area.getWidth() - (margin * (cols - 1))) / cols;
 
     auto getCol = [&](int index) -> juce::Rectangle<int> {
@@ -208,9 +225,6 @@ void VST3OpenValhallaAudioProcessorEditor::resized()
     // Helper to layout 2 knobs in a column
     auto layoutColumn = [&](int colIndex, juce::Slider& top, juce::Slider& bottom) {
         auto col = getCol(colIndex);
-        // Optional: draw panel background in paint via cached rects?
-        // For now just place sliders.
-
         int knobHeight = (col.getHeight() - 20) / 2;
         top.setBounds(col.removeFromTop(knobHeight).reduced(10));
         bottom.setBounds(col.reduced(10));
@@ -221,4 +235,9 @@ void VST3OpenValhallaAudioProcessorEditor::resized()
     layoutColumn(2, feedbackSlider, densitySlider);
     layoutColumn(3, modRateSlider, modDepthSlider);
     layoutColumn(4, eqHighSlider, eqLowSlider);
+
+    // Column 5: Ducking (Top)
+    auto col5 = getCol(5);
+    int knobHeight = (col5.getHeight() - 20) / 2;
+    duckingSlider.setBounds(col5.removeFromTop(knobHeight).reduced(10));
 }

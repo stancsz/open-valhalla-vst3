@@ -61,6 +61,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout VST3OpenValhallaAudioProcess
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         "EQLOW", "EQ Low", juce::NormalisableRange<float>(10.0f, 1000.0f, 1.0f, 0.3f), 200.0f));
 
+    // Ducking
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        "DUCKING", "Ducking", juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f), 0.0f));
+
     // Mode
     juce::StringArray modes;
     modes.add("Twin Star");         // Gemini
@@ -220,11 +224,12 @@ void VST3OpenValhallaAudioProcessor::processBlock (juce::AudioBuffer<float>& buf
     auto modDepth = apvts.getRawParameterValue("MODDEPTH")->load();
     auto eqHigh = apvts.getRawParameterValue("EQHIGH")->load();
     auto eqLow = apvts.getRawParameterValue("EQLOW")->load();
+    auto ducking = apvts.getRawParameterValue("DUCKING")->load();
     auto mode = static_cast<int>(apvts.getRawParameterValue("MODE")->load());
 
     reverbProcessor.setParameters(
         mix, width, delay, warp, feedback, density,
-        modRate, modDepth, eqHigh, eqLow, mode
+        modRate, modDepth, eqHigh, eqLow, ducking, mode
     );
 
     juce::dsp::AudioBlock<float> block(buffer);
@@ -378,23 +383,52 @@ void VST3OpenValhallaAudioProcessor::resetAllParametersToDefault()
     if (auto* p = apvts.getParameter("MODDEPTH")) p->setValueNotifyingHost(p->convertTo0to1(50.0f));
     if (auto* p = apvts.getParameter("EQHIGH")) p->setValueNotifyingHost(p->convertTo0to1(5000.0f));
     if (auto* p = apvts.getParameter("EQLOW")) p->setValueNotifyingHost(p->convertTo0to1(200.0f));
+    if (auto* p = apvts.getParameter("DUCKING")) p->setValueNotifyingHost(p->convertTo0to1(0.0f));
 }
 
 void VST3OpenValhallaAudioProcessor::setParametersForMode(int modeIndex)
 {
-    // For now, we will just define this function to fix the linker error.
-    // In a full implementation, this would switch case on modeIndex and set defaults.
-    // Since we don't have the specific values for each of the 21 modes, we leave it as a placeholder
-    // or just ensure it doesn't crash.
+    auto setParam = [&](const juce::String& id, float value) {
+        if (auto* p = apvts.getParameter(id))
+            p->setValueNotifyingHost(p->convertTo0to1(value));
+    };
 
-    // Example structure (commented out):
-    /*
+    // Default values
+    float delay = 100.0f;
+    float warp = 0.0f;
+    float feedback = 50.0f;
+    float density = 0.0f;
+    float modDepth = 50.0f;
+
     switch (modeIndex)
     {
-        case TwinStar: // Gemini
-            // Set specific defaults...
-            break;
-        // ...
+        case TwinStar:      delay = 50.0f; density = 20.0f; warp = 10.0f; break;
+        case SeaSerpent:    delay = 80.0f; modDepth = 70.0f; warp = 20.0f; break;
+        case HorseMan:      delay = 120.0f; feedback = 60.0f; break;
+        case Archer:        delay = 150.0f; feedback = 60.0f; density = 30.0f; break;
+        case VoidMaker:     delay = 300.0f; feedback = 80.0f; density = 0.0f; break;
+        case GalaxySpiral:  delay = 400.0f; feedback = 85.0f; break;
+        case HarpString:    delay = 40.0f; feedback = 70.0f; break;
+        case GoatHorn:      delay = 60.0f; feedback = 60.0f; break;
+        case NebulaCloud:   delay = 200.0f; feedback = 75.0f; break;
+        case Triangle:      delay = 250.0f; feedback = 50.0f; break;
+        case CloudMajor:    delay = 100.0f; feedback = 60.0f; warp = 30.0f; break;
+        case CloudMinor:    delay = 100.0f; feedback = 60.0f; warp = 40.0f; break;
+        case QueenChair:    delay = 350.0f; feedback = 90.0f; break;
+        case HunterBelt:    delay = 380.0f; feedback = 90.0f; break;
+        case WaterBearer:   delay = 500.0f; feedback = 40.0f; break;
+        case TwoFish:       delay = 500.0f; feedback = 45.0f; break;
+        case ScorpionTail:  delay = 180.0f; feedback = 65.0f; break;
+        case BalanceScale:  delay = 200.0f; feedback = 70.0f; break;
+        case LionHeart:     delay = 800.0f; feedback = 95.0f; density = 100.0f; break;
+        case Maiden:        delay = 50.0f; feedback = 40.0f; break;
+        case SevenSisters:  delay = 150.0f; feedback = 60.0f; break;
+        default:            break;
     }
-    */
+
+    setParam("DELAY", delay);
+    setParam("WARP", warp);
+    setParam("FEEDBACK", feedback);
+    setParam("DENSITY", density);
+    setParam("MODDEPTH", modDepth);
 }

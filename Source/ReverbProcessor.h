@@ -13,7 +13,7 @@ public:
 
     void setParameters(float mix, float width, float delay, float warp,
                        float feedback, float density, float modRate,
-                       float modDepth, float eqHigh, float eqLow, int mode);
+                       float modDepth, float eqHigh, float eqLow, float ducking, int mode);
 
 private:
     juce::dsp::Reverb reverb;
@@ -37,7 +37,11 @@ private:
     float currentModDepth = 50.0f;
     float currentEqHigh = 5000.0f;
     float currentEqLow = 200.0f;
+    float currentDucking = 0.0f;
     int currentMode = 0;
+
+    // Envelope follower state
+    float envelope = 0.0f;
 
     // Pre-allocated buffer for processing
     juce::AudioBuffer<float> wetBuffer;
