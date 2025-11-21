@@ -42,7 +42,7 @@ fi
 
 # Zip
 cd build/package
-zip -r ../../release/OpenValhalla-Mac.zip .
+zip -r ../../release/Open_Valhalla_VST3_Mac.zip .
 cd ../..
 
-echo "Build complete: release/OpenValhalla-Mac.zip"
+echo "Build complete: release/Open_Valhalla_VST3_Mac.zip"

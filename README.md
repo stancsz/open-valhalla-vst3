@@ -46,11 +46,18 @@
 ## Installation
 
 ### For Users
-Download the latest Release for your operating system (Windows, macOS, or Linux) from the [Releases](../../releases) page.
-*   **VST3**: Place the `.vst3` file in your system's VST3 folder.
-    *   **Windows**: `C:\Program Files\Common Files\VST3\`
-    *   **Mac**: `/Library/Audio/Plug-Ins/VST3/`
-    *   **Linux**: `~/.vst3/` or `/usr/lib/vst3/`
+Download the latest Release for your operating system (Windows, Mac, or Linux) from the [Releases](../../releases) page. The release will be a `.zip` file (e.g., `Open_Valhalla_VST3_Linux.zip`).
+
+1.  **Unzip** the downloaded file.
+2.  **VST3 Plugin**:
+    *   Find the `Open Valhalla.vst3` file (or folder).
+    *   Copy it to your system's VST3 directory:
+        *   **Windows**: `C:\Program Files\Common Files\VST3\`
+        *   **Mac**: `/Library/Audio/Plug-Ins/VST3/`
+        *   **Linux**: `~/.vst3/` or `/usr/lib/vst3/`
+3.  **Standalone Application** (Optional):
+    *   Find the `Open Valhalla` executable (or app bundle).
+    *   You can run this directly or copy it to your Applications folder.
 
 ### For Developers
 See the [Build Instructions](#build-instructions) below.

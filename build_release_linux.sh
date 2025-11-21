@@ -40,7 +40,7 @@ fi
 
 # Zip
 cd build/package
-zip -r ../../release/OpenValhalla-Linux.zip .
+zip -r ../../release/Open_Valhalla_VST3_Linux.zip .
 cd ../..
 
-echo "Build complete: release/OpenValhalla-Linux.zip"
+echo "Build complete: release/Open_Valhalla_VST3_Linux.zip"
