@@ -88,13 +88,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout VST3OpenValhallaAudioProcess
     layout.add(std::make_unique<juce::AudioParameterChoice>(
         "MODE", "Mode", modes, 0));
 
-    // We still keep internal DECAY mapped to something else or derived, but for now I'll remove the explicit simple DECAY if it conflicts or reuse it.
-    // The user request has FEEDBACK and DENSITY, but also mentioned "Decay" in descriptions.
-    // Valhalla Supermassive doesn't have a main "DECAY" knob in the image, it has FEEDBACK and DENSITY and DELAY/WARP.
-    // The descriptions say "shorter decay", "longer decay". This is usually a function of Feedback in FDNs.
-    // So I will remove the separate DECAY parameter and let Feedback control it, or keep it hidden if needed.
-    // I will remove the old simple DECAY parameter.
-
     return layout;
 }
 
@@ -279,6 +272,111 @@ void VST3OpenValhallaAudioProcessor::setStateInformation (const void* data, int 
     if (xmlState.get() != nullptr)
         if (xmlState->hasTagName (apvts.state.getType()))
             apvts.replaceState (juce::ValueTree::fromXml (*xmlState));
+}
+
+void VST3OpenValhallaAudioProcessor::resetAllParametersToDefault()
+{
+    // Resets all parameters to their default values
+    for (auto* param : getParameters())
+    {
+        if (auto* p = dynamic_cast<juce::AudioProcessorParameter*>(param))
+        {
+            // Skip the MODE parameter if we don't want to reset it on Clear
+            // But usually "Clear" clears audio, maybe not settings.
+            // However, the user said "knobs ... didn't change" when Clear is clicked.
+            // This implies they expect them to change.
+            // If I reset MODE, it jumps back to Twin Star. That might be annoying.
+            // I will skip MODE.
+
+            // Checking if the parameter is "MODE"
+            // The parameterID might be prefixed.
+            // apvts parameters usually have the ID we gave them.
+
+            // Actually, getParameters() returns AudioProcessorParameter*.
+            // We can check name or rely on order, but ID is safer.
+            // But AudioProcessorParameter doesn't always expose ID easily without casting to AudioProcessorParameterWithID.
+
+            if (auto* pid = dynamic_cast<juce::AudioProcessorParameterWithID*>(p))
+            {
+                if (pid->paramID == "MODE") continue;
+            }
+
+            p->setValueNotifyingHost(p->getDefaultValue());
+        }
+    }
+}
+
+void VST3OpenValhallaAudioProcessor::setParametersForMode(int modeIndex)
+{
+    // Sets parameters to "sensible defaults" for the selected mode.
+    // Since we don't have a definitive list, we will map a few known characteristics
+    // and default the rest.
+
+    // Helper to set parameter by ID
+    auto setParam = [&](juce::String id, float value) {
+        if (auto* p = apvts.getParameter(id))
+        {
+             // setValueNotifyingHost expects normalized 0-1
+             p->setValueNotifyingHost(p->getNormalisableRange().convertTo0to1(value));
+        }
+    };
+
+    // Default starting point for all modes
+    setParam("MIX", 50.0f);
+    setParam("WIDTH", 100.0f);
+    setParam("DELAY", 300.0f);
+    setParam("WARP", 0.0f);
+    setParam("FEEDBACK", 50.0f);
+    setParam("DENSITY", 50.0f); // Default middle density
+    setParam("MODRATE", 0.5f);
+    setParam("MODDEPTH", 50.0f);
+    setParam("EQHIGH", 8000.0f);
+    setParam("EQLOW", 200.0f);
+
+    switch (modeIndex)
+    {
+        case 0: // Twin Star (Gemini)
+            setParam("DELAY", 100.0f);
+            setParam("FEEDBACK", 40.0f);
+            break;
+
+        case 1: // Sea Serpent (Hydra)
+            setParam("DELAY", 200.0f);
+            setParam("MODDEPTH", 70.0f); // More modulation
+            break;
+
+        case 2: // Horse Man (Centaurus)
+            setParam("FEEDBACK", 60.0f);
+            break;
+
+        case 3: // Archer (Sagittarius)
+             setParam("DELAY", 500.0f);
+             setParam("DENSITY", 20.0f);
+             break;
+
+        case 4: // Void Maker (Great Annihilator)
+             setParam("DELAY", 600.0f);
+             setParam("FEEDBACK", 85.0f); // Long decay
+             setParam("DENSITY", 80.0f);
+             break;
+
+        case 5: // Galaxy Spiral (Andromeda)
+             setParam("DELAY", 800.0f);
+             setParam("MODRATE", 0.2f);
+             break;
+
+        case 10: // Cloud Major
+             setParam("WARP", 40.0f);
+             break;
+
+        case 14: // Water Bearer (EchoVerb)
+             setParam("MIX", 40.0f);
+             setParam("DELAY", 400.0f);
+             setParam("FEEDBACK", 30.0f);
+             break;
+
+        // Add more as needed, or stick to defaults.
+    }
 }
 
 //==============================================================================

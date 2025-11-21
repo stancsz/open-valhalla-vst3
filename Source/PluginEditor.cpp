@@ -37,7 +37,29 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
     addAndMakeVisible(clearButton);
     clearButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF2A2A2A));
     clearButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
-    clearButton.onClick = [this]() { audioProcessor.clearTriggered = true; };
+    clearButton.onClick = [this]()
+    {
+        audioProcessor.clearTriggered = true;
+        audioProcessor.resetAllParametersToDefault();
+    };
+
+    modeComboBox.onChange = [this]()
+    {
+        // When user changes mode via UI, update defaults
+        // Note: onChange is called when the combo box item is selected.
+        // The attachment might also trigger parameter change.
+        // We want to update AFTER the parameter is set, or just forcefully set parameters.
+        // Since setParametersForMode updates parameters via APVTS, it will update the UI sliders too.
+
+        // However, ComboBoxAttachment syncs the parameter with the ComboBox.
+        // If we change other parameters here, it should be fine.
+
+        // Issue: onChange might be called before the parameter is updated by the attachment?
+        // Actually, attachment listens to the parameter and updates the box, AND listens to the box and updates the parameter.
+        // If we rely on the box index:
+
+        audioProcessor.setParametersForMode(modeComboBox.getSelectedId() - 1);
+    };
 
     setSize (850, 450);
 }
