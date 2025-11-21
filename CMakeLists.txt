@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(open-valhalla-vst3 VERSION 0.0.3)
+project(fdnr-vst3 VERSION 0.0.3)
 
 # Check if JUCE is already available (e.g. if this is a subproject)
 if(NOT TARGET juce::juce_audio_utils)
@@ -13,7 +13,7 @@ if(NOT TARGET juce::juce_audio_utils)
     FetchContent_MakeAvailable(juce)
 endif()
 
-juce_add_plugin(VST3OpenValhalla
+juce_add_plugin(FDNR
     COMPANY_NAME "OpenSourceCommunity"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
@@ -22,12 +22,12 @@ juce_add_plugin(VST3OpenValhalla
     EDITOR_WANTED TRUE
     COPY_PLUGIN_AFTER_BUILD TRUE
     PLUGIN_MANUFACTURER_CODE Juce
-    PLUGIN_CODE VstO
+    PLUGIN_CODE FdnR
     FORMATS VST3 Standalone
-    PRODUCT_NAME "Open Valhalla"
+    PRODUCT_NAME "Feedback Delay Network Reverberator"
 )
 
-target_sources(VST3OpenValhalla
+target_sources(FDNR
     PRIVATE
         Source/PluginProcessor.cpp
         Source/PluginProcessor.h
@@ -37,9 +37,9 @@ target_sources(VST3OpenValhalla
         Source/ReverbProcessor.h
 )
 
-target_compile_features(VST3OpenValhalla PRIVATE cxx_std_17)
+target_compile_features(FDNR PRIVATE cxx_std_17)
 
-target_compile_definitions(VST3OpenValhalla
+target_compile_definitions(FDNR
     PUBLIC
         JUCE_VST3_CAN_REPLACE_VST2=0
         JUCE_USE_CURL=0
@@ -51,7 +51,7 @@ if(UNIX AND NOT APPLE)
     pkg_check_modules(ALSA REQUIRED alsa)
 endif()
 
-target_link_libraries(VST3OpenValhalla
+target_link_libraries(FDNR
     PRIVATE
         juce::juce_audio_utils
         juce::juce_dsp
@@ -93,7 +93,7 @@ target_link_libraries(ScreenshotTest
 
 target_compile_definitions(ScreenshotTest
     PRIVATE
-        JucePlugin_Name="Open Valhalla"
+        JucePlugin_Name="Feedback Delay Network Reverberator"
         JucePlugin_VersionString="0.0.3"
         JucePlugin_WantsMidiInput=0
         JucePlugin_ProducesMidiOutput=0

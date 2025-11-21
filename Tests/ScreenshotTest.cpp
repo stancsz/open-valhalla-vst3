@@ -14,7 +14,7 @@ public:
     void initialise(const juce::String&) override
     {
         // Create the plugin
-        auto plugin = std::make_unique<VST3OpenValhallaAudioProcessor>();
+        auto plugin = std::make_unique<FDNRAudioProcessor>();
         
         // Create the editor
         // Note: createEditor returns a pointer that we own (usually) or is managed by the processor?

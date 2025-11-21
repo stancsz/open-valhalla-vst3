@@ -3,10 +3,10 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include "PluginProcessor.h"
 
-class ValhallaLookAndFeel : public juce::LookAndFeel_V4
+class FDNRLookAndFeel : public juce::LookAndFeel_V4
 {
 public:
-    ValhallaLookAndFeel()
+    FDNRLookAndFeel()
     {
         setColour(juce::Slider::thumbColourId, juce::Colours::white);
         setColour(juce::Slider::rotarySliderFillColourId, juce::Colour(0xFF80FFEA)); // Brighter Cyan
@@ -98,18 +98,18 @@ public:
     }
 };
 
-class VST3OpenValhallaAudioProcessorEditor  : public juce::AudioProcessorEditor
+class FDNRAudioProcessorEditor  : public juce::AudioProcessorEditor
 {
 public:
-    VST3OpenValhallaAudioProcessorEditor (VST3OpenValhallaAudioProcessor&);
-    ~VST3OpenValhallaAudioProcessorEditor() override;
+    FDNRAudioProcessorEditor (FDNRAudioProcessor&);
+    ~FDNRAudioProcessorEditor() override;
 
     void paint (juce::Graphics&) override;
     void resized() override;
 
 private:
-    VST3OpenValhallaAudioProcessor& audioProcessor;
-    ValhallaLookAndFeel lookAndFeel;
+    FDNRAudioProcessor& audioProcessor;
+    FDNRLookAndFeel lookAndFeel;
 
     void addSlider(juce::Slider& slider, std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>& attachment, const juce::String& paramID, const juce::String& name);
     void addComboBox(juce::ComboBox& box, std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment>& attachment, const juce::String& paramID, const juce::String& name);
@@ -157,5 +157,5 @@ private:
     juce::HyperlinkButton websiteLink;
     juce::TooltipWindow tooltipWindow;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VST3OpenValhallaAudioProcessorEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FDNRAudioProcessorEditor)
 };

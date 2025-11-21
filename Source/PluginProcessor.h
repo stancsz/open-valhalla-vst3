@@ -4,12 +4,12 @@
 #include <juce_dsp/juce_dsp.h>
 #include "ReverbProcessor.h"
 
-class VST3OpenValhallaAudioProcessor  : public juce::AudioProcessor
+class FDNRAudioProcessor  : public juce::AudioProcessor
 {
 public:
     //==============================================================================
-    VST3OpenValhallaAudioProcessor();
-    ~VST3OpenValhallaAudioProcessor() override;
+    FDNRAudioProcessor();
+    ~FDNRAudioProcessor() override;
 
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
@@ -99,5 +99,5 @@ private:
     };
 
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VST3OpenValhallaAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FDNRAudioProcessor)
 };

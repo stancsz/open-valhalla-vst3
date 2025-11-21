@@ -2,7 +2,7 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-VST3OpenValhallaAudioProcessor::VST3OpenValhallaAudioProcessor()
+FDNRAudioProcessor::FDNRAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
                      .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
@@ -15,11 +15,11 @@ VST3OpenValhallaAudioProcessor::VST3OpenValhallaAudioProcessor()
     stateB = apvts.copyState();
 }
 
-VST3OpenValhallaAudioProcessor::~VST3OpenValhallaAudioProcessor()
+FDNRAudioProcessor::~FDNRAudioProcessor()
 {
 }
 
-juce::AudioProcessorValueTreeState::ParameterLayout VST3OpenValhallaAudioProcessor::createParameterLayout()
+juce::AudioProcessorValueTreeState::ParameterLayout FDNRAudioProcessor::createParameterLayout()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
@@ -76,12 +76,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout VST3OpenValhallaAudioProcess
     return layout;
 }
 
-const juce::String VST3OpenValhallaAudioProcessor::getName() const
+const juce::String FDNRAudioProcessor::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool VST3OpenValhallaAudioProcessor::acceptsMidi() const
+bool FDNRAudioProcessor::acceptsMidi() const
 {
    #if JucePlugin_WantsMidiInput
     return true;
@@ -90,7 +90,7 @@ bool VST3OpenValhallaAudioProcessor::acceptsMidi() const
    #endif
 }
 
-bool VST3OpenValhallaAudioProcessor::producesMidi() const
+bool FDNRAudioProcessor::producesMidi() const
 {
    #if JucePlugin_ProducesMidiOutput
     return true;
@@ -99,7 +99,7 @@ bool VST3OpenValhallaAudioProcessor::producesMidi() const
    #endif
 }
 
-bool VST3OpenValhallaAudioProcessor::isMidiEffect() const
+bool FDNRAudioProcessor::isMidiEffect() const
 {
    #if JucePlugin_IsMidiEffect
     return true;
@@ -108,36 +108,36 @@ bool VST3OpenValhallaAudioProcessor::isMidiEffect() const
    #endif
 }
 
-double VST3OpenValhallaAudioProcessor::getTailLengthSeconds() const
+double FDNRAudioProcessor::getTailLengthSeconds() const
 {
     return 0.0;
 }
 
-int VST3OpenValhallaAudioProcessor::getNumPrograms()
+int FDNRAudioProcessor::getNumPrograms()
 {
     return 1;
 }
 
-int VST3OpenValhallaAudioProcessor::getCurrentProgram()
+int FDNRAudioProcessor::getCurrentProgram()
 {
     return 0;
 }
 
-void VST3OpenValhallaAudioProcessor::setCurrentProgram (int index)
+void FDNRAudioProcessor::setCurrentProgram (int index)
 {
 }
 
-const juce::String VST3OpenValhallaAudioProcessor::getProgramName (int index)
+const juce::String FDNRAudioProcessor::getProgramName (int index)
 {
     return {};
 }
 
-void VST3OpenValhallaAudioProcessor::changeProgramName (int index, const juce::String& newName)
+void FDNRAudioProcessor::changeProgramName (int index, const juce::String& newName)
 {
 }
 
 //==============================================================================
-void VST3OpenValhallaAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void FDNRAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
@@ -147,13 +147,13 @@ void VST3OpenValhallaAudioProcessor::prepareToPlay (double sampleRate, int sampl
     reverbProcessor.prepare(spec);
 }
 
-void VST3OpenValhallaAudioProcessor::releaseResources()
+void FDNRAudioProcessor::releaseResources()
 {
     reverbProcessor.reset();
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
-bool VST3OpenValhallaAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool FDNRAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
   #if JucePlugin_IsMidiEffect
     juce::ignoreUnused (layouts);
@@ -173,7 +173,7 @@ bool VST3OpenValhallaAudioProcessor::isBusesLayoutSupported (const BusesLayout& 
 }
 #endif
 
-void VST3OpenValhallaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void FDNRAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
@@ -234,25 +234,25 @@ void VST3OpenValhallaAudioProcessor::processBlock (juce::AudioBuffer<float>& buf
 }
 
 //==============================================================================
-bool VST3OpenValhallaAudioProcessor::hasEditor() const
+bool FDNRAudioProcessor::hasEditor() const
 {
     return true;
 }
 
-juce::AudioProcessorEditor* VST3OpenValhallaAudioProcessor::createEditor()
+juce::AudioProcessorEditor* FDNRAudioProcessor::createEditor()
 {
-    return new VST3OpenValhallaAudioProcessorEditor (*this);
+    return new FDNRAudioProcessorEditor (*this);
 }
 
 //==============================================================================
-void VST3OpenValhallaAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void FDNRAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     std::unique_ptr<juce::XmlElement> xml (state.createXml());
     copyXmlToBinary (*xml, destData);
 }
 
-void VST3OpenValhallaAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void FDNRAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     std::unique_ptr<juce::XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
 
@@ -261,7 +261,7 @@ void VST3OpenValhallaAudioProcessor::setStateInformation (const void* data, int 
             apvts.replaceState (juce::ValueTree::fromXml (*xmlState));
 }
 
-void VST3OpenValhallaAudioProcessor::savePreset(const juce::File& file)
+void FDNRAudioProcessor::savePreset(const juce::File& file)
 {
     auto state = apvts.copyState();
     juce::DynamicObject* jsonObject = new juce::DynamicObject();
@@ -286,7 +286,7 @@ void VST3OpenValhallaAudioProcessor::savePreset(const juce::File& file)
     file.replaceWithText(jsonString);
 }
 
-void VST3OpenValhallaAudioProcessor::loadPreset(const juce::File& file)
+void FDNRAudioProcessor::loadPreset(const juce::File& file)
 {
     if (!file.existsAsFile()) return;
 
@@ -322,10 +322,10 @@ void VST3OpenValhallaAudioProcessor::loadPreset(const juce::File& file)
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new VST3OpenValhallaAudioProcessor();
+    return new FDNRAudioProcessor();
 }
 
-void VST3OpenValhallaAudioProcessor::resetAllParametersToDefault()
+void FDNRAudioProcessor::resetAllParametersToDefault()
 {
     auto resetParam = [&](const juce::String& id, float defaultVal) {
         if (auto* p = apvts.getParameter(id))
@@ -365,11 +365,11 @@ void VST3OpenValhallaAudioProcessor::resetAllParametersToDefault()
     if (auto* p = apvts.getParameter("LIMITER")) p->setValueNotifyingHost(1.0f); // On by default
 }
 
-void VST3OpenValhallaAudioProcessor::setParametersForMode(int modeIndex)
+void FDNRAudioProcessor::setParametersForMode(int modeIndex)
 {
 }
 
-void VST3OpenValhallaAudioProcessor::toggleAB()
+void FDNRAudioProcessor::toggleAB()
 {
     if (isStateA)
     {

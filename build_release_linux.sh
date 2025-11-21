@@ -20,27 +20,27 @@ echo "Packaging..."
 mkdir -p build/package
 
 # Copy VST3
-if [ -d "build/VST3OpenValhalla_artefacts/Release/VST3" ]; then
-    cp -r "build/VST3OpenValhalla_artefacts/Release/VST3" build/package/
-elif [ -d "build/VST3OpenValhalla_artefacts/VST3" ]; then
-    cp -r "build/VST3OpenValhalla_artefacts/VST3" build/package/
+if [ -d "build/FDNR_artefacts/Release/VST3" ]; then
+    cp -r "build/FDNR_artefacts/Release/VST3" build/package/
+elif [ -d "build/FDNR_artefacts/VST3" ]; then
+    cp -r "build/FDNR_artefacts/VST3" build/package/
 else
     echo "Error: VST3 artifact not found!"
     exit 1
 fi
 
 # Copy Standalone
-if [ -d "build/VST3OpenValhalla_artefacts/Release/Standalone" ]; then
-    cp -r "build/VST3OpenValhalla_artefacts/Release/Standalone" build/package/
-elif [ -d "build/VST3OpenValhalla_artefacts/Standalone" ]; then
-    cp -r "build/VST3OpenValhalla_artefacts/Standalone" build/package/
+if [ -d "build/FDNR_artefacts/Release/Standalone" ]; then
+    cp -r "build/FDNR_artefacts/Release/Standalone" build/package/
+elif [ -d "build/FDNR_artefacts/Standalone" ]; then
+    cp -r "build/FDNR_artefacts/Standalone" build/package/
 else
     echo "Warning: Standalone artifact not found."
 fi
 
 # Zip
 cd build/package
-zip -r ../../release/Open_Valhalla_VST3_Linux.zip .
+zip -r ../../release/FDNR_VST3_Linux.zip .
 cd ../..
 
-echo "Build complete: release/Open_Valhalla_VST3_Linux.zip"
+echo "Build complete: release/FDNR_VST3_Linux.zip"

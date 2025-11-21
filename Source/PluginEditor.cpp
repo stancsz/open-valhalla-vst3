@@ -1,7 +1,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3OpenValhallaAudioProcessor& p)
+FDNRAudioProcessorEditor::FDNRAudioProcessorEditor (FDNRAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
     setLookAndFeel(&lookAndFeel);
@@ -36,7 +36,6 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
     addSlider(eqHighSlider, eqHighAtt, "EQ3_HIGH", "HIGH");
 
     // Utility Group
-    // Utility Group
     preDelaySyncBox.addItemList({"Free", "1/4", "1/8", "1/16"}, 1);
     preDelaySyncBox.setTextWhenNothingSelected("Default");
     addComboBox(preDelaySyncBox, preDelaySyncAtt, "PREDELAY_SYNC", "SYNC");
@@ -46,11 +45,10 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
     abSwitchButton.setToggleState(audioProcessor.isStateA, juce::dontSendNotification);
     abSwitchButton.onClick = [this]() {
         audioProcessor.toggleAB();
-        abSwitchButton.setToggleState(audioProcessor.isStateA, juce::dontSendNotification); // This assumes A is checked? Or maybe A is one state and B is off?
-        // Let's make it clearer:
+        abSwitchButton.setToggleState(audioProcessor.isStateA, juce::dontSendNotification);
         abSwitchButton.setButtonText(audioProcessor.isStateA ? "A" : "B");
     };
-    abSwitchButton.setButtonText(audioProcessor.isStateA ? "A" : "B"); // Initialize text
+    abSwitchButton.setButtonText(audioProcessor.isStateA ? "A" : "B");
 
     addAndMakeVisible(modeComboBox);
     modeComboBox.addItemList(audioProcessor.getAPVTS().getParameter("MODE")->getAllValueStrings(), 1);
@@ -89,12 +87,11 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
     setSize(1150, 600);
 }
 
-VST3OpenValhallaAudioProcessorEditor::~VST3OpenValhallaAudioProcessorEditor() { setLookAndFeel(nullptr); }
+FDNRAudioProcessorEditor::~FDNRAudioProcessorEditor() { setLookAndFeel(nullptr); }
 
-void VST3OpenValhallaAudioProcessorEditor::addSlider(juce::Slider& slider, std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>& attachment, const juce::String& paramID, const juce::String& name)
+void FDNRAudioProcessorEditor::addSlider(juce::Slider& slider, std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>& attachment, const juce::String& paramID, const juce::String& name)
 {
     slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    // Display value text above the knob
     slider.setTextBoxStyle(juce::Slider::TextBoxAbove, false, 60, 14);
     slider.setPopupDisplayEnabled(true, false, this);
     slider.setTooltip(name);
@@ -105,7 +102,6 @@ void VST3OpenValhallaAudioProcessorEditor::addSlider(juce::Slider& slider, std::
     label->setJustificationType(juce::Justification::centred);
     label->setColour(juce::Label::textColourId, juce::Colours::white);
     label->setFont(juce::Font(11.0f, juce::Font::bold));
-    // Attach label below slider with minimal offset
     label->attachToComponent(&slider, false);
     addAndMakeVisible(*label);
     labels.push_back(std::move(label));
@@ -114,7 +110,7 @@ void VST3OpenValhallaAudioProcessorEditor::addSlider(juce::Slider& slider, std::
         attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.getAPVTS(), paramID, slider);
 }
 
-void VST3OpenValhallaAudioProcessorEditor::addComboBox(juce::ComboBox& box, std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment>& attachment, const juce::String& paramID, const juce::String& name)
+void FDNRAudioProcessorEditor::addComboBox(juce::ComboBox& box, std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment>& attachment, const juce::String& paramID, const juce::String& name)
 {
     box.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(box);
@@ -131,7 +127,7 @@ void VST3OpenValhallaAudioProcessorEditor::addComboBox(juce::ComboBox& box, std:
     labels.push_back(std::move(label));
 }
 
-void VST3OpenValhallaAudioProcessorEditor::addToggle(juce::ToggleButton& button, std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>& attachment, const juce::String& paramID, const juce::String& name)
+void FDNRAudioProcessorEditor::addToggle(juce::ToggleButton& button, std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>& attachment, const juce::String& paramID, const juce::String& name)
 {
     button.setButtonText(name);
     addAndMakeVisible(button);
@@ -139,7 +135,7 @@ void VST3OpenValhallaAudioProcessorEditor::addToggle(juce::ToggleButton& button,
         attachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(audioProcessor.getAPVTS(), paramID, button);
 }
 
-void VST3OpenValhallaAudioProcessorEditor::paint(juce::Graphics& g)
+void FDNRAudioProcessorEditor::paint(juce::Graphics& g)
 {
     juce::ColourGradient bgGradient(juce::Colour(0xFF101010), 0, 0, juce::Colour(0xFF202028), 0, (float)getHeight(), false);
     g.setGradientFill(bgGradient);
@@ -147,7 +143,7 @@ void VST3OpenValhallaAudioProcessorEditor::paint(juce::Graphics& g)
 
     g.setColour(juce::Colours::white);
     g.setFont(juce::Font("Futura", 30.0f, juce::Font::bold));
-    g.drawFittedText("OPEN VALHALLA", getLocalBounds().removeFromTop(50), juce::Justification::centred, 1);
+    g.drawFittedText("FDNR", getLocalBounds().removeFromTop(50), juce::Justification::centred, 1);
 
     auto area = getLocalBounds().reduced(15);
     area.removeFromTop(50);
@@ -174,7 +170,7 @@ void VST3OpenValhallaAudioProcessorEditor::paint(juce::Graphics& g)
     }
 }
 
-void VST3OpenValhallaAudioProcessorEditor::resized()
+void FDNRAudioProcessorEditor::resized()
 {
     auto area = getLocalBounds().reduced(15);
     area.removeFromTop(50);
@@ -190,16 +186,13 @@ void VST3OpenValhallaAudioProcessorEditor::resized()
     // 1. MIX / LEVEL
     {
         auto r = getGroup(0);
-        // Large Mix Knob (32% height) - reduced to give more space below
         auto top = r.removeFromTop(r.getHeight() * 0.32f);
         mixSlider.setBounds(top.reduced(10));
 
-        // M/S Width, Ducking, Limiter in remaining space with minimal vertical padding
         int h = r.getHeight() / 3;
         msBalanceSlider.setBounds(r.removeFromTop(h).reduced(15, 4));
         duckingSlider.setBounds(r.removeFromTop(h).reduced(15, 4));
         
-        // Center the limiter button
         auto limiterRow = r.removeFromTop(h);
         int buttonWidth = 80;
         limiterButton.setBounds(limiterRow.getCentreX() - buttonWidth / 2, 
@@ -211,7 +204,6 @@ void VST3OpenValhallaAudioProcessorEditor::resized()
     // 2. TIME / SIZE
     {
         auto r = getGroup(1);
-        // Large Delay Knob (32% height) - reduced to give more space below
         auto top = r.removeFromTop(r.getHeight() * 0.32f);
         delaySlider.setBounds(top.reduced(10));
 
@@ -224,15 +216,8 @@ void VST3OpenValhallaAudioProcessorEditor::resized()
     // 3. MODULATION
     {
         auto r = getGroup(2);
-        // Large Width Knob (32% height) - reduced to give more space below
         auto top = r.removeFromTop(r.getHeight() * 0.32f);
         widthSlider.setBounds(top.reduced(10));
-
-        // Grid for others (Warp, Rate, Depth, Sat, Gate)
-        // 5 controls remaining.
-        // Row 1: Warp, Rate
-        // Row 2: Depth, Sat
-        // Row 3: Gate
 
         int rowH = r.getHeight() / 3;
         int colW = r.getWidth() / 2;
@@ -247,7 +232,6 @@ void VST3OpenValhallaAudioProcessorEditor::resized()
 
         auto row3 = r.removeFromTop(rowH);
         gateThreshSlider.setBounds(row3.removeFromLeft(colW).reduced(5, 4));
-        // Empty slot next to gate
     }
 
     // 4. FILTERS / EQ
@@ -255,34 +239,28 @@ void VST3OpenValhallaAudioProcessorEditor::resized()
         auto r = getGroup(3);
         int rowHeight = r.getHeight() / 3;
         
-        // Helper to center slider vertically but keep it tight to pull label down
         auto placeTight = [&](juce::Slider& s, juce::Rectangle<int> zone) {
             int maxS = juce::jmin(zone.getWidth(), zone.getHeight());
-            // Reduce knob size to avoid overlap
             int knobSize = (int)(maxS * 0.75f); 
-            int sliderH = knobSize + 20; // Knob + Text + Padding
+            int sliderH = knobSize + 20; 
             
-            // Center vertically
             s.setBounds(zone.getCentreX() - knobSize / 2, 
                         zone.getCentreY() - sliderH / 2 + 10, 
                         knobSize, 
                         sliderH);
         };
 
-        // Row 1: Dyn Freq, Dyn Q
         auto row1 = r.removeFromTop(rowHeight);
         int halfW = row1.getWidth() / 2;
         
         placeTight(dynFreqSlider, row1.removeFromLeft(halfW).reduced(2));
         placeTight(dynQSlider, row1.reduced(2));
 
-        // Row 2: Dyn Gain, Dyn Thr
         auto row2 = r.removeFromTop(rowHeight);
         
         placeTight(dynGainSlider, row2.removeFromLeft(halfW).reduced(2));
         placeTight(dynThreshSlider, row2.reduced(2));
 
-        // Row 3: 3-Band EQ
         auto row3 = r;
         int thirdW = row3.getWidth() / 3;
         
@@ -299,13 +277,11 @@ void VST3OpenValhallaAudioProcessorEditor::resized()
         modeComboBox.setBounds(r.removeFromTop(h).reduced(5, 15));
         preDelaySyncBox.setBounds(r.removeFromTop(h).reduced(5, 15));
 
-        // A/B and Save
         auto row3 = r.removeFromTop(h);
         int w = row3.getWidth() / 2;
         abSwitchButton.setBounds(row3.removeFromLeft(w).reduced(5));
         savePresetButton.setBounds(row3.reduced(5));
 
-        // Load and Clear
         auto row4 = r.removeFromTop(h);
         loadPresetButton.setBounds(row4.removeFromLeft(w).reduced(5));
         clearButton.setBounds(row4.reduced(5));

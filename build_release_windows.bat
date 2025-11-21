@@ -24,22 +24,22 @@ if %errorlevel% neq 0 (
 echo Packaging...
 if not exist "build\package" mkdir build\package
 
-if exist "build\VST3OpenValhalla_artefacts\Release\VST3" (
-    xcopy "build\VST3OpenValhalla_artefacts\Release\VST3" "build\package\VST3\" /E /I /Y
+if exist "build\FDNR_artefacts\Release\VST3" (
+    xcopy "build\FDNR_artefacts\Release\VST3" "build\package\VST3\" /E /I /Y
 ) else (
     echo Error: VST3 artifact not found!
     exit /b 1
 )
 
-if exist "build\VST3OpenValhalla_artefacts\Release\Standalone" (
-    xcopy "build\VST3OpenValhalla_artefacts\Release\Standalone" "build\package\Standalone\" /E /I /Y
+if exist "build\FDNR_artefacts\Release\Standalone" (
+    xcopy "build\FDNR_artefacts\Release\Standalone" "build\package\Standalone\" /E /I /Y
 ) else (
     echo Warning: Standalone artifact not found.
 )
 
 echo Zipping...
-if exist "release\Open_Valhalla_VST3_Windows.zip" del "release\Open_Valhalla_VST3_Windows.zip"
-powershell -command "Compress-Archive -Path 'build\package\*' -DestinationPath 'release\Open_Valhalla_VST3_Windows.zip' -Force"
+if exist "release\FDNR_VST3_Windows.zip" del "release\FDNR_VST3_Windows.zip"
+powershell -command "Compress-Archive -Path 'build\package\*' -DestinationPath 'release\FDNR_VST3_Windows.zip' -Force"
 
-echo Build complete: release\Open_Valhalla_VST3_Windows.zip
+echo Build complete: release\FDNR_VST3_Windows.zip
 endlocal

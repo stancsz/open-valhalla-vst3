@@ -1,10 +1,10 @@
-# Open Valhalla (VST3)
+# Feedback Delay Network Reverberator (FDNR)
 
-[![Download v0.1.0](https://img.shields.io/badge/Download-v0.1.0-brightgreen?style=for-the-badge)](https://github.com/stancsz/open-valhalla-vst3/releases/tag/v0.1.0)
+[![Download v0.1.0](https://img.shields.io/badge/Download-v0.1.0-brightgreen?style=for-the-badge)](https://github.com/stancsz/fdnr-vst3/releases/tag/v0.1.0)
 
-![Open Valhalla Screenshot](screenshot.png)
+![FDNR Screenshot](screenshot.png)
 
-**Open Valhalla** is an open-source, modular reverb engine offering high-fidelity algorithms inspired by classic space reverberators. It features deep modulation, multiple reverb modes, and VST3 compatibility.
+**Feedback Delay Network Reverberator (FDNR)** is an open-source, modular reverb engine offering high-fidelity algorithms inspired by classic space reverberators. It features deep modulation, multiple reverb modes, and VST3 compatibility.
 
 ## Features
 
@@ -48,15 +48,15 @@
 ### For Users
 Download the latest Release for your operating system (Windows, Mac, or Linux) from the [Releases](../../releases) page, or use the download badge above which links to the current Windows release.
 
-1.  **Unzip** the downloaded `.zip` file (e.g., `Open_Valhalla_VST3_Windows.zip`).
+1.  **Unzip** the downloaded `.zip` file (e.g., `FDNR_VST3_Windows.zip`).
 2.  **VST3 Plugin**:
-    *   Find the `Open Valhalla.vst3` file (or folder).
+    *   Find the `FDNR.vst3` file (or folder).
     *   Copy it to your system's VST3 directory:
         *   **Windows**: `C:\Program Files\Common Files\VST3\`
         *   **Mac**: `/Library/Audio/Plug-Ins/VST3/`
         *   **Linux**: `~/.vst3/` or `/usr/lib/vst3/` (or your DAW's VST3 folder)
 3.  **Standalone Application** (Optional):
-    *   Find the `Open Valhalla` executable (or app bundle).
+    *   Find the `FDNR` executable (or app bundle).
     *   You can run this directly or copy it to your Applications folder.
 
 If the plugin doesn't appear in your host
@@ -94,12 +94,12 @@ cmake --build build --config Release
 ```
 
 The compiled VST3 plugin will be located in:
-*   `build/VST3OpenValhalla_artefacts/Release/VST3/` (Windows/Linux)
-*   *Or* `build/VST3OpenValhalla_artefacts/VST3/` (depending on CMake generator)
+*   `build/FDNR_artefacts/Release/VST3/` (Windows/Linux)
+*   *Or* `build/FDNR_artefacts/VST3/` (depending on CMake generator)
 
 The Standalone application will be in:
-*   `build/VST3OpenValhalla_artefacts/Release/Standalone/`
-*   *Or* `build/VST3OpenValhalla_artefacts/Standalone/`
+*   `build/FDNR_artefacts/Release/Standalone/`
+*   *Or* `build/FDNR_artefacts/Standalone/`
 
 ## Project Structure
 
@@ -107,7 +107,7 @@ The Standalone application will be in:
     *   `PluginProcessor.cpp/h`: Handles audio processing and state management.
     *   `PluginEditor.cpp/h`: Handles the GUI implementation.
     *   `ReverbProcessor.cpp/h`: Encapsulates the core DSP logic.
-*   **release/**: Contains the zipped release artifacts (for example: `Open_Valhalla_VST3_Windows.zip`).
+*   **release/**: Contains the zipped release artifacts (for example: `FDNR_VST3_Windows.zip`).
 *   **docs/screenshot.png**: UI screenshot used in documentation.
 
 ## Contributing
@@ -121,4 +121,4 @@ This project is open-source. JUCE is used under the GPLv3/Commercial license.
 
 ## Credits
 
-This is an educational recreation and tribute to the incredible work of Valhalla DSP.
+This is an educational project exploring Feedback Delay Networks (FDN).
