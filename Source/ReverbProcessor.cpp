@@ -20,8 +20,8 @@ ReverbProcessor::ReverbProcessor()
     chorus.setFeedback(0.0f);
     chorus.setMix(1.0f); // We use chorus purely as a modulator block
 
-    lowPassFilter.setType(juce::dsp::FirstOrderTPTFilterType::lowpass);
-    highPassFilter.setType(juce::dsp::FirstOrderTPTFilterType::highpass);
+    dynamicEqFilter.setType(juce::dsp::StateVariableTPTFilterType::bandpass);
+    detectorFilter.setType(juce::dsp::StateVariableTPTFilterType::bandpass);
 }
 
 ReverbProcessor::~ReverbProcessor()
@@ -35,8 +35,8 @@ void ReverbProcessor::prepare(const juce::dsp::ProcessSpec& spec)
     reverb.prepare(spec);
     delayLine.prepare(spec);
     chorus.prepare(spec);
-    lowPassFilter.prepare(spec);
-    highPassFilter.prepare(spec);
+    dynamicEqFilter.prepare(spec);
+    detectorFilter.prepare(spec);
 
     delayLine.setMaximumDelayInSamples(1.5 * sampleRate);
 
@@ -150,7 +150,6 @@ void ReverbProcessor::process(juce::dsp::ProcessContextReplacing<float>& context
 
         case 16: // Scorpion Tail (Scorpio)
              reverbParams.roomSize = baseRoomSize * 0.7f;
-             highPassFilter.setCutoffFrequency(currentEqLow * 2.0f); // Tweak filter directly
              break;
 
         case 17: // Balance Scale (Libra)
@@ -194,10 +193,6 @@ void ReverbProcessor::process(juce::dsp::ProcessContextReplacing<float>& context
 
     reverb.setParameters(reverbParams);
 
-    lowPassFilter.setCutoffFrequency(currentEqHigh);
-    if (currentMode != 16) // Already set for Scorpio
-        highPassFilter.setCutoffFrequency(currentEqLow);
-
     // PROCESS AUDIO
 
     // Get Audio Block
@@ -223,9 +218,88 @@ void ReverbProcessor::process(juce::dsp::ProcessContextReplacing<float>& context
     // 3. Reverb
     reverb.process(wetContext);
 
-    // 4. EQ
-    lowPassFilter.process(wetContext);
-    highPassFilter.process(wetContext);
+    // Dynamic EQ
+    dynamicEqFilter.setCutoffFrequency(currentDynFreq);
+    dynamicEqFilter.setResonance(currentDynQ);
+    detectorFilter.setCutoffFrequency(currentDynFreq);
+    detectorFilter.setResonance(currentDynQ);
+
+    // Manual process for Dynamic EQ
+    size_t nSamples = wetBlock.getNumSamples();
+    size_t nChannels = wetBlock.getNumChannels();
+
+    float att = 1.0f - std::exp(-1.0f / (0.005f * sampleRate));
+    float rel = 1.0f - std::exp(-1.0f / (0.1f * sampleRate));
+    float threshLinear = std::pow(10.0f, currentDynThresh / 20.0f);
+
+    for (size_t s = 0; s < nSamples; ++s)
+    {
+        float detectorIn = 0.0f;
+        for (size_t ch = 0; ch < nChannels; ++ch)
+            detectorIn += wetBlock.getChannelPointer(ch)[s];
+        detectorIn /= (float)nChannels;
+
+        float filteredDet = detectorFilter.processSample(0, detectorIn);
+        float envIn = std::abs(filteredDet);
+
+        if (envIn > dynEqEnvelope) dynEqEnvelope += (envIn - dynEqEnvelope) * att;
+        else dynEqEnvelope += (envIn - dynEqEnvelope) * rel;
+
+        float dynGain = 0.0f;
+        if (dynEqEnvelope > threshLinear)
+        {
+            float envDb = juce::Decibels::gainToDecibels(dynEqEnvelope + 0.00001f);
+            float excessDb = envDb - currentDynThresh;
+            if (excessDb > 0.0f)
+                 dynGain = currentDynDepth * std::min(1.0f, excessDb / 20.0f);
+        }
+
+        float totalGainDb = currentDynGain + dynGain;
+        float totalGainLin = juce::Decibels::decibelsToGain(totalGainDb);
+
+        // Peak EQ Approximation: Out = In + (Gain - 1) * Bandpass
+        for (size_t ch = 0; ch < nChannels; ++ch)
+        {
+            float inSample = wetBlock.getChannelPointer(ch)[s];
+            float bpSample = dynamicEqFilter.processSample((int)ch, inSample);
+            wetBlock.getChannelPointer(ch)[s] = inSample + (totalGainLin - 1.0f) * bpSample;
+        }
+    }
+
+    // Ducking
+    if (currentDucking > 0.0f)
+    {
+        float attackCoeff = 1.0f - std::exp(-1.0f / (0.01f * sampleRate));
+        float releaseCoeff = 1.0f - std::exp(-1.0f / (0.1f * sampleRate));
+        float duckIntensity = currentDucking / 100.0f;
+
+        // Iterate samples for envelope follower
+        auto numSamples = wetBlock.getNumSamples();
+        auto numChannels = wetBlock.getNumChannels();
+
+        // Assuming stereo or mono
+        const float* inputL = inputBlock.getChannelPointer(0);
+        const float* inputR = (inputBlock.getNumChannels() > 1) ? inputBlock.getChannelPointer(1) : nullptr;
+
+        for (size_t s = 0; s < numSamples; ++s)
+        {
+            float inMag = std::abs(inputL[s]);
+            if (inputR) inMag = std::max(inMag, std::abs(inputR[s]));
+
+            if (inMag > envelope)
+                envelope += (inMag - envelope) * attackCoeff;
+            else
+                envelope += (inMag - envelope) * releaseCoeff;
+
+            // Calculate reduction
+            float reduction = std::max(0.0f, 1.0f - (envelope * duckIntensity * 2.5f));
+
+            for (size_t ch = 0; ch < numChannels; ++ch)
+            {
+                wetBlock.getChannelPointer(ch)[s] *= reduction;
+            }
+        }
+    }
 
     // 5. Mix
     // dry is inputBlock
@@ -254,13 +328,13 @@ void ReverbProcessor::reset()
     reverb.reset();
     delayLine.reset();
     chorus.reset();
-    lowPassFilter.reset();
-    highPassFilter.reset();
+    dynamicEqFilter.reset();
+    detectorFilter.reset();
 }
 
 void ReverbProcessor::setParameters(float mix, float width, float delay, float warp,
                                     float feedback, float density, float modRate,
-                                    float modDepth, float eqHigh, float eqLow, int mode)
+                                    float modDepth, float dynFreq, float dynQ, float dynGain, float dynDepth, float dynThresh, float ducking, int mode)
 {
     currentMix = mix;
     currentWidth = width;
@@ -270,8 +344,12 @@ void ReverbProcessor::setParameters(float mix, float width, float delay, float w
     currentDensity = density;
     currentModRate = modRate;
     currentModDepth = modDepth;
-    currentEqHigh = eqHigh;
-    currentEqLow = eqLow;
+    currentDynFreq = dynFreq;
+    currentDynQ = dynQ;
+    currentDynGain = dynGain;
+    currentDynDepth = dynDepth;
+    currentDynThresh = dynThresh;
+    currentDucking = ducking;
     currentMode = mode;
 }
 

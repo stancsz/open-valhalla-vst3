@@ -121,14 +121,16 @@ private:
     juce::Slider delaySlider, warpSlider;
     juce::Slider feedbackSlider, densitySlider;
     juce::Slider modRateSlider, modDepthSlider;
-    juce::Slider eqHighSlider, eqLowSlider;
+    juce::Slider dynFreqSlider, dynQSlider, dynGainSlider, dynDepthSlider, dynThreshSlider;
+    juce::Slider duckingSlider;
 
     // Attachments
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> mixAtt, widthAtt;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> delayAtt, warpAtt;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> feedbackAtt, densityAtt;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> modRateAtt, modDepthAtt;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> eqHighAtt, eqLowAtt;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> dynFreqAtt, dynQAtt, dynGainAtt, dynDepthAtt, dynThreshAtt;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> duckingAtt;
 
     // Labels
     std::vector<std::unique_ptr<juce::Label>> labels;
@@ -151,6 +153,8 @@ private:
 
     // Website Link
     juce::HyperlinkButton websiteLink;
+
+    juce::TooltipWindow tooltipWindow;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (VST3OpenValhallaAudioProcessorEditor)
 };

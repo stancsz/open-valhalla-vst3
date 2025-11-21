@@ -10,6 +10,8 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
     addSlider(mixSlider, mixAtt, "MIX", "MIX");
     addSlider(widthSlider, widthAtt, "WIDTH", "WIDTH");
 
+    addSlider(duckingSlider, duckingAtt, "DUCKING", "DUCKING");
+
     addSlider(delaySlider, delayAtt, "DELAY", "DELAY");
     addSlider(warpSlider, warpAtt, "WARP", "WARP");
 
@@ -19,8 +21,12 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
     addSlider(modRateSlider, modRateAtt, "MODRATE", "MOD RATE");
     addSlider(modDepthSlider, modDepthAtt, "MODDEPTH", "MOD DEPTH");
 
-    addSlider(eqHighSlider, eqHighAtt, "EQHIGH", "EQ HIGH");
-    addSlider(eqLowSlider, eqLowAtt, "EQLOW", "EQ LOW");
+    // Dynamic EQ
+    addSlider(dynFreqSlider, dynFreqAtt, "DYNFREQ", "DYN FREQ");
+    addSlider(dynQSlider, dynQAtt, "DYNQ", "DYN Q");
+    addSlider(dynGainSlider, dynGainAtt, "DYNGAIN", "DYN GAIN");
+    addSlider(dynDepthSlider, dynDepthAtt, "DYNDEPTH", "DYN DEPTH");
+    addSlider(dynThreshSlider, dynThreshAtt, "DYNTHRESH", "DYN THRESH");
 
     // Mode
     addAndMakeVisible(modeComboBox);
@@ -32,9 +38,11 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
     modeLabel.setJustificationType(juce::Justification::centred);
     modeLabel.setColour(juce::Label::textColourId, juce::Colour(0xFF888888));
     addAndMakeVisible(modeLabel);
+    modeComboBox.setTooltip("Selects the reverb algorithm.");
 
     // Clear Button
     addAndMakeVisible(clearButton);
+    clearButton.setTooltip("Resets reverb buffer and parameters.");
     clearButton.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF444444));
     clearButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     clearButton.onClick = [this]()
@@ -45,19 +53,6 @@ VST3OpenValhallaAudioProcessorEditor::VST3OpenValhallaAudioProcessorEditor (VST3
 
     modeComboBox.onChange = [this]()
     {
-        // When user changes mode via UI, update defaults
-        // Note: onChange is called when the combo box item is selected.
-        // The attachment might also trigger parameter change.
-        // We want to update AFTER the parameter is set, or just forcefully set parameters.
-        // Since setParametersForMode updates parameters via APVTS, it will update the UI sliders too.
-
-        // However, ComboBoxAttachment syncs the parameter with the ComboBox.
-        // If we change other parameters here, it should be fine.
-
-        // Issue: onChange might be called before the parameter is updated by the attachment?
-        // Actually, attachment listens to the parameter and updates the box, AND listens to the box and updates the parameter.
-        // If we rely on the box index:
-
         audioProcessor.setParametersForMode(modeComboBox.getSelectedId() - 1);
     };
 
@@ -127,6 +122,22 @@ void VST3OpenValhallaAudioProcessorEditor::addSlider(juce::Slider& slider, std::
     slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 70, 20);
     slider.setPopupDisplayEnabled(true, false, this); // Show value on drag
+
+    if (paramID == "MIX") slider.setTooltip("Controls the wet/dry balance.");
+    else if (paramID == "WIDTH") slider.setTooltip("Adjusts stereo width.");
+    else if (paramID == "DELAY") slider.setTooltip("Sets pre-delay time (ms).");
+    else if (paramID == "WARP") slider.setTooltip("Adds modulation character.");
+    else if (paramID == "FEEDBACK") slider.setTooltip("Controls decay time.");
+    else if (paramID == "DENSITY") slider.setTooltip("Adjusts diffusion density.");
+    else if (paramID == "MODRATE") slider.setTooltip("LFO speed.");
+    else if (paramID == "MODDEPTH") slider.setTooltip("LFO intensity.");
+    else if (paramID == "DYNFREQ") slider.setTooltip("Dynamic EQ Frequency.");
+    else if (paramID == "DYNQ") slider.setTooltip("Dynamic EQ Bandwidth (Q).");
+    else if (paramID == "DYNGAIN") slider.setTooltip("Dynamic EQ Static Gain.");
+    else if (paramID == "DYNDEPTH") slider.setTooltip("Dynamic EQ Modulation Depth.");
+    else if (paramID == "DYNTHRESH") slider.setTooltip("Dynamic EQ Threshold.");
+    else if (paramID == "DUCKING") slider.setTooltip("Compresses reverb when input is loud.");
+
     addAndMakeVisible(slider);
 
     auto label = std::make_unique<juce::Label>();
@@ -189,9 +200,7 @@ void VST3OpenValhallaAudioProcessorEditor::resized()
     savePresetButton.setBounds(clearButton.getRight() + 10, modeComboBox.getY(), 60, 30);
     loadPresetButton.setBounds(savePresetButton.getRight() + 10, modeComboBox.getY(), 60, 30);
 
-    // Main panels layout
-    // 5 Columns: Mix | Delay | Feedback | Mod | EQ
-
+    // 5 Columns, 3 Rows
     columnRects.clear();
 
     int margin = 10;
@@ -204,18 +213,29 @@ void VST3OpenValhallaAudioProcessorEditor::resized()
         return r;
     };
 
-    // Helper to layout 2 knobs in a column
-    auto layoutColumn = [&](int colIndex, juce::Slider& top, juce::Slider& bottom) {
+    // Layout helper for 3 rows
+    auto layoutColumn3 = [&](int colIndex, juce::Slider& row1, juce::Slider& row2, juce::Slider* row3) {
         auto col = getCol(colIndex);
+        int knobHeight = (col.getHeight() - 20) / 3;
 
-        int knobHeight = (col.getHeight() - 20) / 2;
-        top.setBounds(col.removeFromTop(knobHeight).reduced(10));
-        bottom.setBounds(col.reduced(10));
+        row1.setBounds(col.removeFromTop(knobHeight).reduced(5)); // Smaller padding
+        row2.setBounds(col.removeFromTop(knobHeight).reduced(5));
+        if (row3)
+            row3->setBounds(col.reduced(5));
     };
 
-    layoutColumn(0, mixSlider, widthSlider);
-    layoutColumn(1, delaySlider, warpSlider);
-    layoutColumn(2, feedbackSlider, densitySlider);
-    layoutColumn(3, modRateSlider, modDepthSlider);
-    layoutColumn(4, eqHighSlider, eqLowSlider);
+    // Col 1: Mix, Width, Ducking
+    layoutColumn3(0, mixSlider, widthSlider, &duckingSlider);
+
+    // Col 2: Delay, Warp, Feedback
+    layoutColumn3(1, delaySlider, warpSlider, &feedbackSlider);
+
+    // Col 3: Density, ModRate, ModDepth
+    layoutColumn3(2, densitySlider, modRateSlider, &modDepthSlider);
+
+    // Col 4: DynFreq, DynQ, DynGain
+    layoutColumn3(3, dynFreqSlider, dynQSlider, &dynGainSlider);
+
+    // Col 5: DynDepth, DynThresh
+    layoutColumn3(4, dynDepthSlider, dynThreshSlider, nullptr);
 }
