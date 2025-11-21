@@ -306,15 +306,15 @@ void FDNRAudioProcessor::loadPreset(const juce::File& file)
                  auto paramID = prop.name.toString();
                  auto value = (float)prop.value;
 
-                 auto* param = apvts.getParameter(paramID);
-                 if (param)
+                 // Use getParameterAsValue to ensure the ValueTree is updated, 
+                 // which triggers the listeners and updates the UI reliably.
+                 auto paramValue = apvts.getParameterAsValue(paramID);
+                 if (paramValue.refersToSameSourceAs(juce::Value()))
                  {
-                     if (auto* rangedParam = dynamic_cast<juce::RangedAudioParameter*>(param))
-                     {
-                         float normalized = rangedParam->convertTo0to1(value);
-                         rangedParam->setValueNotifyingHost(normalized);
-                     }
+                     // Fallback if parameter not found in APVTS (shouldn't happen if IDs match)
+                     continue;
                  }
+                 paramValue.setValue(value);
             }
         }
     }
@@ -328,11 +328,8 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 void FDNRAudioProcessor::resetAllParametersToDefault()
 {
     auto resetParam = [&](const juce::String& id, float defaultVal) {
-        if (auto* p = apvts.getParameter(id))
-        {
-            if (auto* range = dynamic_cast<juce::RangedAudioParameter*>(p))
-                p->setValueNotifyingHost(range->convertTo0to1(defaultVal));
-        }
+        // Use getParameterAsValue to ensure bidirectional update
+        apvts.getParameterAsValue(id).setValue(defaultVal);
     };
 
     resetParam("MIX", 50.0f);
@@ -362,7 +359,8 @@ void FDNRAudioProcessor::resetAllParametersToDefault()
 
     resetParam("MS_BALANCE", 50.0f);
 
-    if (auto* p = apvts.getParameter("LIMITER")) p->setValueNotifyingHost(1.0f); // On by default
+    if (auto* p = apvts.getParameter("LIMITER")) 
+        apvts.getParameterAsValue("LIMITER").setValue(true); // On by default
 }
 
 void FDNRAudioProcessor::setParametersForMode(int modeIndex)
