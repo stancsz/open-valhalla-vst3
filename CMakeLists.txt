@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(VST3-Open-Valhalla VERSION 0.0.3)
+project(open-valhalla-vst3 VERSION 0.0.3)
 
 # Check if JUCE is already available (e.g. if this is a subproject)
 if(NOT TARGET juce::juce_audio_utils)
