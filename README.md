@@ -4,7 +4,7 @@
 
 ![Open Valhalla Screenshot](screenshot.png)
 
-> **Note:** This project is an **educational recreation and tribute**. It captures the spirit and workflow of classic hardware but uses standard DSP blocks rather than exact circuit modeling or proprietary FDN algorithms. See [COMPARISON.md](COMPARISON.md) for a detailed architectural comparison.
+
 
 ## Features
 
@@ -102,7 +102,6 @@ The Standalone application will be in:
     *   `PluginEditor.cpp/h`: Handles the GUI implementation.
     *   `ReverbProcessor.cpp/h`: Encapsulates the core DSP logic.
 *   **release/**: Contains the zipped release artifacts.
-*   **COMPARISON.md**: detailed architectural comparison with reference hardware/software.
 
 ## License
 

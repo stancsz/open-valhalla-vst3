@@ -2,7 +2,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "../Source/PluginProcessor.h"
 #include "../Source/PluginEditor.h"
-
+// cmake --build build --config Debug --target ScreenshotTest
 class ScreenshotTestApp : public juce::JUCEApplication
 {
 public:

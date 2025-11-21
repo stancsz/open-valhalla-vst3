@@ -94,8 +94,8 @@ VST3OpenValhallaAudioProcessorEditor::~VST3OpenValhallaAudioProcessorEditor() { 
 void VST3OpenValhallaAudioProcessorEditor::addSlider(juce::Slider& slider, std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>& attachment, const juce::String& paramID, const juce::String& name)
 {
     slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    // Reduced text box height to bring value closer to knob
-    slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 60, 12);
+    // Display value text above the knob
+    slider.setTextBoxStyle(juce::Slider::TextBoxAbove, false, 60, 14);
     slider.setPopupDisplayEnabled(true, false, this);
     slider.setTooltip(name);
     addAndMakeVisible(slider);
