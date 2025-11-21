@@ -46,10 +46,16 @@ target_compile_definitions(VST3OpenValhalla
         JUCE_WEB_BROWSER=0
 )
 
+if(UNIX AND NOT APPLE)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(ALSA REQUIRED alsa)
+endif()
+
 target_link_libraries(VST3OpenValhalla
     PRIVATE
         juce::juce_audio_utils
         juce::juce_dsp
+        ${ALSA_LIBRARIES}
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags

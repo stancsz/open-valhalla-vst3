@@ -38,7 +38,7 @@ void ReverbProcessor::prepare(const juce::dsp::ProcessSpec& spec)
     lowPassFilter.prepare(spec);
     highPassFilter.prepare(spec);
 
-    delayLine.setMaximumDelayInSamples(2.0 * sampleRate);
+    delayLine.setMaximumDelayInSamples(1.5 * sampleRate);
 
     // Pre-allocate wet buffer
     wetBuffer.setSize(spec.numChannels, spec.maximumBlockSize);

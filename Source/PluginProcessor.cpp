@@ -31,7 +31,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout VST3OpenValhallaAudioProcess
 
     // Delay
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "DELAY", "Delay", juce::NormalisableRange<float>(0.0f, 2000.0f, 0.1f), 300.0f));
+        "DELAY", "Delay", juce::NormalisableRange<float>(0.0f, 1000.0f, 0.1f), 100.0f));
 
     // Warp
     layout.add(std::make_unique<juce::AudioParameterFloat>(
@@ -87,13 +87,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout VST3OpenValhallaAudioProcess
 
     layout.add(std::make_unique<juce::AudioParameterChoice>(
         "MODE", "Mode", modes, 0));
-
-    // We still keep internal DECAY mapped to something else or derived, but for now I'll remove the explicit simple DECAY if it conflicts or reuse it.
-    // The user request has FEEDBACK and DENSITY, but also mentioned "Decay" in descriptions.
-    // Valhalla Supermassive doesn't have a main "DECAY" knob in the image, it has FEEDBACK and DENSITY and DELAY/WARP.
-    // The descriptions say "shorter decay", "longer decay". This is usually a function of Feedback in FDNs.
-    // So I will remove the separate DECAY parameter and let Feedback control it, or keep it hidden if needed.
-    // I will remove the old simple DECAY parameter.
 
     return layout;
 }

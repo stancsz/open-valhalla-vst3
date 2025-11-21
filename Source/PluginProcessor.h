@@ -61,6 +61,9 @@ public:
     // Trigger Clear
     std::atomic<bool> clearTriggered { false };
 
+    void resetAllParametersToDefault();
+    void setParametersForMode(int modeIndex);
+
 private:
 
     // Mode Enum
