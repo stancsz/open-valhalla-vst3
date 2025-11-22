@@ -1,8 +1,25 @@
 # Feedback Delay Network Reverberator (FDNR)
 
-[![Download v0.1.0](https://img.shields.io/badge/Download-v0.1.0-brightgreen?style=for-the-badge)](https://github.com/stancsz/fdnr-vst3/releases/tag/v0.1.0)
+[![Download v0.2.0](https://img.shields.io/badge/Download-v0.2.0-brightgreen?style=for-the-badge)](https://github.com/stancsz/fdnr-vst3/releases/tag/v0.2.0)
 
 ![FDNR Screenshot](screenshot.png)
+
+## Release v0.2.0 — FDNR v2.0
+```
+### 21 New Modes
+Explore a universe of sound with 21 unique algorithms, including:
+
+- **Void Maker** — Massive, infinite drones.
+- **Galaxy Spiral** — Lush, swirling modulation.
+- **Harp String** — Resonant, metallic textures.
+- **Twin Star** — Balanced, all-purpose hall.
+
+### New Features
+- **Deep Shaping** — Control Warp, Density, Diffusion, and Saturation.
+- **Dynamics** — Built-in Ducking and Gating for cleaner mixes.
+- **EQ** — Integrated 3-Band and Dynamic EQ.
+- **Workflow** — Resizable UI, A/B switching, and JSON preset management.
+```
 
 **Feedback Delay Network Reverberator (FDNR)** is an open-source, modular reverb engine offering high-fidelity algorithms inspired by classic space reverberators. It features deep modulation, multiple reverb modes, and VST3 compatibility.
 
