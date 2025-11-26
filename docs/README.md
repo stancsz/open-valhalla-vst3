@@ -1,8 +1,22 @@
-# Feedback Delay Network Reverberator (FDNR)
+# FND Reverb
 
-[![Download v0.2.0](https://img.shields.io/badge/Download-v0.2.0-brightgreen?style=for-the-badge)](https://github.com/stancsz/fdnr-vst3/releases/tag/v0.2.0)
+[![Download v0.2.1](https://img.shields.io/badge/Download-v0.2.1-brightgreen?style=for-the-badge)](https://github.com/stancsz/fdnr-vst3/releases/tag/v0.2.1)
 
 ![FDNR Screenshot](screenshot.png)
+
+## Release v0.2.1 — FND Reverb by Stancsz Audio
+```
+### Branding Update
+- **New Name**: FND Reverb (Feedback Delay Network Reverb)
+- **Company**: Stancsz Audio
+- **Manufacturer Code**: NAPT
+
+### UI Improvements
+- Modern ComboBox and PopupMenu styling with dark theme and cyan accents
+- Reduced button heights by 50% for cleaner, more compact layout
+- Improved title sizing and spacing with better visual hierarchy
+- Removed website link from interface for cleaner design
+```
 
 ## Release v0.2.0 — FDNR v2.0
 ```
@@ -21,7 +35,7 @@ Explore a universe of sound with 21 unique algorithms, including:
 - **Workflow** — Resizable UI, A/B switching, and JSON preset management.
 ```
 
-**Feedback Delay Network Reverberator (FDNR)** is an open-source, modular reverb engine offering high-fidelity algorithms inspired by classic space reverberators. It features deep modulation, multiple reverb modes, and VST3 compatibility.
+**FND Reverb** is an open-source, modular reverb engine by **Stancsz Audio** offering high-fidelity algorithms inspired by classic space reverberators. It features deep modulation, multiple reverb modes, and VST3 compatibility.
 
 ## Features
 
