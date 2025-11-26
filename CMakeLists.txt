@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(fdnr-vst3 VERSION 0.0.3)
+project(fdnr-vst3 VERSION 0.2.1)
 
 # Check if JUCE is already available (e.g. if this is a subproject)
 if(NOT TARGET juce::juce_audio_utils)
@@ -94,7 +94,7 @@ target_link_libraries(ScreenshotTest
 target_compile_definitions(ScreenshotTest
     PRIVATE
         JucePlugin_Name="FND Reverb"
-        JucePlugin_VersionString="0.0.3"
+        JucePlugin_VersionString="0.2.1"
         JucePlugin_WantsMidiInput=0
         JucePlugin_ProducesMidiOutput=0
         JucePlugin_IsMidiEffect=0
