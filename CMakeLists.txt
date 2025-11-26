@@ -14,7 +14,7 @@ if(NOT TARGET juce::juce_audio_utils)
 endif()
 
 juce_add_plugin(FDNR
-    COMPANY_NAME "Nap-Tech"
+    COMPANY_NAME "Stancsz Audio"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE

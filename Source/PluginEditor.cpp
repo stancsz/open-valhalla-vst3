@@ -147,7 +147,7 @@ void FDNRAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText("FND Reverb", titleArea.removeFromTop(25), juce::Justification::centred, false);
     
     g.setFont(juce::Font("Futura", 13.0f, juce::Font::plain));
-    g.drawText("Nap-Tech", titleArea, juce::Justification::centred, false);
+    g.drawText("Stancsz Audio", titleArea, juce::Justification::centred, false);
 
     auto area = getLocalBounds().reduced(15);
     area.removeFromTop(50);
