@@ -96,6 +96,87 @@ public:
         // Minimal border to bring label text very close to value text
         return juce::BorderSize<int>(0, 0, 0, 0);
     }
+
+    void drawComboBox (juce::Graphics& g, int width, int height, bool isButtonDown,
+                       int buttonX, int buttonY, int buttonW, int buttonH,
+                       juce::ComboBox& box) override
+    {
+        auto cornerSize = 4.0f;
+        juce::Rectangle<float> boxBounds (0.0f, 0.0f, (float) width, (float) height);
+
+        // 1. Flat Dark Background
+        g.setColour (juce::Colour::fromString("FF1E1E1E"));
+        g.fillRoundedRectangle (boxBounds, cornerSize);
+
+        // 2. Minimal Border
+        g.setColour (juce::Colours::white.withAlpha(0.2f));
+        g.drawRoundedRectangle (boxBounds, cornerSize, 1.0f);
+
+        // 3. Custom Arrow (Chevron)
+        juce::Path arrow;
+        auto arrowSize = 5.0f;
+        auto arrowCenter = juce::Point<float> ((float) (width - 15), height * 0.5f);
+        
+        // Simple V shape
+        arrow.startNewSubPath (arrowCenter.x - arrowSize, arrowCenter.y - arrowSize * 0.5f);
+        arrow.lineTo (arrowCenter.x, arrowCenter.y + arrowSize * 0.5f);
+        arrow.lineTo (arrowCenter.x + arrowSize, arrowCenter.y - arrowSize * 0.5f);
+
+        g.setColour (juce::Colours::lightgrey);
+        g.strokePath (arrow, juce::PathStrokeType (1.5f));
+    }
+
+    void drawPopupMenuItem (juce::Graphics& g, const juce::Rectangle<int>& area,
+                            const bool isSeparator, const bool isActive,
+                            const bool isHighlighted, const bool isTicked,
+                            const bool hasSubMenu, const juce::String& text,
+                            const juce::String& shortcutKeyText,
+                            const juce::Drawable* icon, const juce::Colour* textColour) override
+    {
+        if (isSeparator)
+        {
+            g.setColour (juce::Colours::white.withAlpha (0.1f));
+            g.fillRect (area.reduced (5, 0).removeFromTop (1));
+            return;
+        }
+
+        auto r = area.toFloat();
+        
+        // 1. Background Coloring
+        if (isHighlighted)
+        {
+            // Hover state
+            g.setColour (juce::Colour::fromString("FF252525")); 
+            g.fillRect (r);
+        }
+        else if (isTicked) 
+        {
+            // Selected state (Active Item) - Subtle distinction
+            g.setColour (juce::Colour::fromString("FF1E1E1E")); 
+            g.fillRect (r);
+        }
+        else 
+        {
+            // Default Background
+            g.setColour (juce::Colour::fromString("FF121212"));
+            g.fillRect (r);
+        }
+
+        // 2. Selection Indicator (The "Designer" replacement for the checkmark)
+        if (isTicked)
+        {
+            g.setColour (juce::Colour::fromString("FF00E5FF")); // Cyan Accent
+            // Draw a thin vertical strip on the left instead of a checkmark
+            g.fillRect (r.removeFromLeft(4.0f)); 
+        }
+
+        // 3. Text
+        g.setColour (isHighlighted ? juce::Colours::white : juce::Colours::lightgrey);
+        g.setFont (getPopupMenuFont());
+        
+        // Left-align text with padding to account for the accent strip
+        g.drawText (text, r.reduced (10, 0), juce::Justification::centredLeft, true);
+    }
 };
 
 class FDNRAudioProcessorEditor  : public juce::AudioProcessorEditor
@@ -154,7 +235,6 @@ private:
     juce::TextButton savePresetButton { "SAVE" };
     juce::TextButton loadPresetButton { "LOAD" };
     std::unique_ptr<juce::FileChooser> fileChooser;
-    juce::HyperlinkButton websiteLink;
     juce::TooltipWindow tooltipWindow;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FDNRAudioProcessorEditor)

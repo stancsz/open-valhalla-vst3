@@ -14,17 +14,17 @@ if(NOT TARGET juce::juce_audio_utils)
 endif()
 
 juce_add_plugin(FDNR
-    COMPANY_NAME "OpenSourceCommunity"
+    COMPANY_NAME "Nap-Tech"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTED TRUE
     COPY_PLUGIN_AFTER_BUILD TRUE
-    PLUGIN_MANUFACTURER_CODE Juce
+    PLUGIN_MANUFACTURER_CODE NAPT
     PLUGIN_CODE FdnR
     FORMATS VST3 Standalone
-    PRODUCT_NAME "Feedback Delay Network Reverberator"
+    PRODUCT_NAME "FND Reverb"
 )
 
 target_sources(FDNR
@@ -93,7 +93,7 @@ target_link_libraries(ScreenshotTest
 
 target_compile_definitions(ScreenshotTest
     PRIVATE
-        JucePlugin_Name="Feedback Delay Network Reverberator"
+        JucePlugin_Name="FND Reverb"
         JucePlugin_VersionString="0.0.3"
         JucePlugin_WantsMidiInput=0
         JucePlugin_ProducesMidiOutput=0

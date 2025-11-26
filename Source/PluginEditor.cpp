@@ -78,9 +78,7 @@ FDNRAudioProcessorEditor::FDNRAudioProcessorEditor (FDNRAudioProcessor& p)
         fileChooser->launchAsync(juce::FileBrowserComponent::openMode, [this](const juce::FileChooser& c) { audioProcessor.loadPreset(c.getResult()); });
     };
 
-    addAndMakeVisible(websiteLink);
-    websiteLink.setButtonText("stanchen.ca");
-    websiteLink.setURL(juce::URL("https://stanchen.ca"));
+
 
     modeComboBox.onChange = [this]() { audioProcessor.setParametersForMode(modeComboBox.getSelectedId() - 1); };
 
@@ -141,9 +139,15 @@ void FDNRAudioProcessorEditor::paint(juce::Graphics& g)
     g.setGradientFill(bgGradient);
     g.fillAll();
 
+    auto titleArea = getLocalBounds().removeFromTop(60);
+    titleArea.removeFromTop(15); // Top margin
+
     g.setColour(juce::Colours::white);
-    g.setFont(juce::Font("Futura", 30.0f, juce::Font::bold));
-    g.drawFittedText("FDNR", getLocalBounds().removeFromTop(50), juce::Justification::centred, 1);
+    g.setFont(juce::Font("Futura", 24.0f, juce::Font::bold));
+    g.drawText("FND Reverb", titleArea.removeFromTop(25), juce::Justification::centred, false);
+    
+    g.setFont(juce::Font("Futura", 13.0f, juce::Font::plain));
+    g.drawText("Nap-Tech", titleArea, juce::Justification::centred, false);
 
     auto area = getLocalBounds().reduced(15);
     area.removeFromTop(50);
@@ -195,10 +199,11 @@ void FDNRAudioProcessorEditor::resized()
         
         auto limiterRow = r.removeFromTop(h);
         int buttonWidth = 80;
+        int buttonHeight = (limiterRow.getHeight() - 8) / 2;
         limiterButton.setBounds(limiterRow.getCentreX() - buttonWidth / 2, 
-                                limiterRow.getY() + 4, 
+                                limiterRow.getCentreY() - buttonHeight / 2, 
                                 buttonWidth, 
-                                limiterRow.getHeight() - 8);
+                                buttonHeight);
     }
 
     // 2. TIME / SIZE
@@ -279,14 +284,22 @@ void FDNRAudioProcessorEditor::resized()
 
         auto row3 = r.removeFromTop(h);
         int w = row3.getWidth() / 2;
-        abSwitchButton.setBounds(row3.removeFromLeft(w).reduced(5));
-        savePresetButton.setBounds(row3.reduced(5));
+        
+        auto b1 = row3.removeFromLeft(w).reduced(5);
+        abSwitchButton.setBounds(b1.getX(), b1.getCentreY() - b1.getHeight() / 4, b1.getWidth(), b1.getHeight() / 2);
+        
+        auto b2 = row3.reduced(5);
+        savePresetButton.setBounds(b2.getX(), b2.getCentreY() - b2.getHeight() / 4, b2.getWidth(), b2.getHeight() / 2);
 
         auto row4 = r.removeFromTop(h);
-        loadPresetButton.setBounds(row4.removeFromLeft(w).reduced(5));
-        clearButton.setBounds(row4.reduced(5));
+        
+        auto b3 = row4.removeFromLeft(w).reduced(5);
+        loadPresetButton.setBounds(b3.getX(), b3.getCentreY() - b3.getHeight() / 4, b3.getWidth(), b3.getHeight() / 2);
+        
+        auto b4 = row4.reduced(5);
+        clearButton.setBounds(b4.getX(), b4.getCentreY() - b4.getHeight() / 4, b4.getWidth(), b4.getHeight() / 2);
     }
 
     // Bottom Bar
-    websiteLink.setBounds(bottomBar.reduced(10));
+
 }
